@@ -186,160 +186,171 @@ class ReplyItemGrpc extends StatelessWidget {
   );
 
   Widget content(BuildContext context, ThemeData theme) {
-    final padding = EdgeInsets.only(
-      left: replyLevel == 0 ? 6 : 45,
-      right: 6,
-    );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () {
-            feedBack();
-            Get.toNamed('/member?mid=${replyItem.mid}');
-          },
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            spacing: 12,
-            children: [
-              _buildAvatar(),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final conciseMode = constraints.maxWidth <= 320;
+        final padding = EdgeInsets.only(
+          left: replyLevel == 0 ? 6 : (conciseMode ? 6 : 45),
+          right: 6,
+        );
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                feedBack();
+                Get.toNamed('/member?mid=${replyItem.mid}');
+              },
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                spacing: 12,
                 children: [
-                  Row(
+                  _buildAvatar(),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
-                    spacing: 6,
                     children: [
-                      Text(
-                        replyItem.member.name,
-                        style: TextStyle(
-                          color:
-                              (replyItem.member.vipStatus > 0 &&
-                                  replyItem.member.vipType == 2)
-                              ? theme.colorScheme.vipColor
-                              : theme.colorScheme.outline,
-                          fontSize: 13,
-                        ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        spacing: 6,
+                        children: [
+                          Text(
+                            replyItem.member.name,
+                            style: TextStyle(
+                              color:
+                                  (replyItem.member.vipStatus > 0 &&
+                                      replyItem.member.vipType == 2)
+                                  ? theme.colorScheme.vipColor
+                                  : theme.colorScheme.outline,
+                              fontSize: 13,
+                            ),
+                          ),
+                          Image.asset(
+                            'assets/images/lv/lv${replyItem.member.isSeniorMember == 1 ? '6_s' : replyItem.member.level}.png',
+                            height: 11,
+                          ),
+                          if (replyItem.mid == upMid)
+                            const PBadge(
+                              text: 'UP',
+                              size: PBadgeSize.small,
+                              isStack: false,
+                              fontSize: 9,
+                            ),
+                        ],
                       ),
-                      Image.asset(
-                        'assets/images/lv/lv${replyItem.member.isSeniorMember == 1 ? '6_s' : replyItem.member.level}.png',
-                        height: 11,
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          Text(
+                            replyLevel == 0
+                                ? DateFormatUtils.format(
+                                    replyItem.ctime.toInt(),
+                                    format: DateFormatUtils.longFormatDs,
+                                  )
+                                : DateFormatUtils.dateFormat(
+                                    replyItem.ctime.toInt(),
+                                  ),
+                            style: TextStyle(
+                              fontSize: theme.textTheme.labelSmall!.fontSize,
+                              color: theme.colorScheme.outline,
+                            ),
+                          ),
+                          if (replyItem.replyControl.hasLocation())
+                            Text(
+                              ' • ${replyItem.replyControl.location}',
+                              style: TextStyle(
+                                fontSize: theme.textTheme.labelSmall!.fontSize,
+                                color: theme.colorScheme.outline,
+                              ),
+                            ),
+                        ],
                       ),
-                      if (replyItem.mid == upMid)
-                        const PBadge(
-                          text: 'UP',
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            Padding(
+              padding: padding,
+              child: custom_text.Text.rich(
+                primary: theme.colorScheme.primary,
+                style: TextStyle(
+                  height: 1.75,
+                  fontSize: theme.textTheme.bodyMedium!.fontSize,
+                ),
+                maxLines: replyLevel == 1 ? replyLengthLimit : null,
+                TextSpan(
+                  children: [
+                    if (replyItem.replyControl.isUpTop) ...[
+                      const WidgetSpan(
+                        alignment: PlaceholderAlignment.middle,
+                        child: PBadge(
+                          text: 'TOP',
                           size: PBadgeSize.small,
                           isStack: false,
+                          type: PBadgeType.line_primary,
                           fontSize: 9,
-                        ),
-                    ],
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      Text(
-                        replyLevel == 0
-                            ? DateFormatUtils.format(
-                                replyItem.ctime.toInt(),
-                                format: DateFormatUtils.longFormatDs,
-                              )
-                            : DateFormatUtils.dateFormat(
-                                replyItem.ctime.toInt(),
-                              ),
-                        style: TextStyle(
-                          fontSize: theme.textTheme.labelSmall!.fontSize,
-                          color: theme.colorScheme.outline,
+                          textScaleFactor: 1,
                         ),
                       ),
-                      if (replyItem.replyControl.hasLocation())
-                        Text(
-                          ' • ${replyItem.replyControl.location}',
-                          style: TextStyle(
-                            fontSize: theme.textTheme.labelSmall!.fontSize,
-                            color: theme.colorScheme.outline,
-                          ),
-                        ),
+                      const TextSpan(text: ' '),
                     ],
+                    buildContent(context, theme, replyItem),
+                  ],
+                ),
+              ),
+            ),
+            if (replyItem.content.pictures.isNotEmpty) ...[
+              Padding(
+                padding: padding,
+                child: LayoutBuilder(
+                  builder: (context, constraints) => CustomGridView(
+                    maxWidth: constraints.maxWidth,
+                    picArr: replyItem.content.pictures
+                        .map(
+                          (item) => ImageModel(
+                            width: item.imgWidth,
+                            height: item.imgHeight,
+                            url: item.imgSrc,
+                          ),
+                        )
+                        .toList(),
+                    onViewImage: onViewImage,
+                    onDismissed: onDismissed,
                   ),
-                ],
+                ),
+              ),
+              const SizedBox(height: 4),
+            ],
+            if (replyLevel != 0) ...[
+              const SizedBox(height: 4),
+              buttonAction(context, theme, conciseMode, replyItem.replyControl),
+            ],
+            if (replyLevel == 1 && replyItem.count > Int64.ZERO) ...[
+              Padding(
+                padding: const EdgeInsets.only(top: 5, bottom: 12),
+                child: replyItemRow(
+                  context,
+                  theme,
+                  conciseMode,
+                  replyItem.replies,
+                ),
               ),
             ],
-          ),
-        ),
-        const SizedBox(height: 10),
-        Padding(
-          padding: padding,
-          child: custom_text.Text.rich(
-            primary: theme.colorScheme.primary,
-            style: TextStyle(
-              height: 1.75,
-              fontSize: theme.textTheme.bodyMedium!.fontSize,
-            ),
-            maxLines: replyLevel == 1 ? replyLengthLimit : null,
-            TextSpan(
-              children: [
-                if (replyItem.replyControl.isUpTop) ...[
-                  const WidgetSpan(
-                    alignment: PlaceholderAlignment.middle,
-                    child: PBadge(
-                      text: 'TOP',
-                      size: PBadgeSize.small,
-                      isStack: false,
-                      type: PBadgeType.line_primary,
-                      fontSize: 9,
-                      textScaleFactor: 1,
-                    ),
-                  ),
-                  const TextSpan(text: ' '),
-                ],
-                buildContent(context, theme, replyItem),
-              ],
-            ),
-          ),
-        ),
-        if (replyItem.content.pictures.isNotEmpty) ...[
-          Padding(
-            padding: padding,
-            child: LayoutBuilder(
-              builder: (context, constraints) => CustomGridView(
-                maxWidth: constraints.maxWidth,
-                picArr: replyItem.content.pictures
-                    .map(
-                      (item) => ImageModel(
-                        width: item.imgWidth,
-                        height: item.imgHeight,
-                        url: item.imgSrc,
-                      ),
-                    )
-                    .toList(),
-                onViewImage: onViewImage,
-                onDismissed: onDismissed,
-              ),
-            ),
-          ),
-          const SizedBox(height: 4),
-        ],
-        if (replyLevel != 0) ...[
-          const SizedBox(height: 4),
-          buttonAction(context, theme, replyItem.replyControl),
-        ],
-        if (replyLevel == 1 && replyItem.count > Int64.ZERO) ...[
-          Padding(
-            padding: const EdgeInsets.only(top: 5, bottom: 12),
-            child: replyItemRow(context, theme, replyItem.replies),
-          ),
-        ],
-      ],
+          ],
+        );
+      },
     );
   }
 
   Widget buttonAction(
     BuildContext context,
     ThemeData theme,
+    bool conciseMode,
     ReplyControl replyControl,
   ) {
     final ButtonStyle style = TextButton.styleFrom(
@@ -349,7 +360,7 @@ class ReplyItemGrpc extends StatelessWidget {
     );
     return Row(
       children: <Widget>[
-        const SizedBox(width: 36),
+        if (!conciseMode) const SizedBox(width: 36),
         SizedBox(
           height: 32,
           child: TextButton(
@@ -450,12 +461,13 @@ class ReplyItemGrpc extends StatelessWidget {
   Widget replyItemRow(
     BuildContext context,
     ThemeData theme,
+    bool conciseMode,
     List<ReplyInfo> replies,
   ) {
     final extraRow = replies.length < replyItem.count.toInt();
     late final length = replies.length + (extraRow ? 1 : 0);
     return Padding(
-      padding: const EdgeInsets.only(left: 42, right: 4),
+      padding: EdgeInsets.only(left: conciseMode ? 4 : 42, right: 4),
       child: Material(
         color: theme.colorScheme.onInverseSurface,
         borderRadius: const BorderRadius.all(Radius.circular(6)),
