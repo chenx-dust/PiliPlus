@@ -514,7 +514,9 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
     }
   }
 
-  Widget get childWhenDisabled {
+  Widget get childWhenDisabled => childWhenDisabledInner(false);
+
+  Widget childWhenDisabledInner(bool doubleColumn) {
     videoDetailController.animationController
       ..removeListener(animListener)
       ..addListener(animListener);
@@ -551,6 +553,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
     return Obx(
       () {
         final isFullScreen = this.isFullScreen;
+        final isPortrait = this.isPortrait || doubleColumn;
         return Scaffold(
           resizeToAvoidBottomInset: false,
           appBar: PreferredSize(
@@ -845,21 +848,49 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
               backgroundColor: Colors.transparent,
               body: Column(
                 children: [
-                  buildTabbar(onTap: videoDetailController.animToTop),
+                  buildTabbar(
+                    onTap: videoDetailController.animToTop,
+                    needIndicator: !doubleColumn,
+                  ),
                   Expanded(
-                    child: videoTabBarView(
-                      controller: videoDetailController.tabCtr,
-                      children: [
-                        videoIntro(
-                          isHorizontal: false,
-                          needCtr: false,
-                          isNested: true,
-                        ),
-                        if (videoDetailController.showReply)
-                          videoReplyPanel(isNested: true),
-                        if (_shouldShowSeasonPanel) seasonPanel,
-                      ],
-                    ),
+                    child: doubleColumn
+                        ? Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: videoIntro(
+                                  width: () {
+                                    double flex = 1;
+                                    if (videoDetailController.showReply) flex++;
+                                    if (_shouldShowSeasonPanel) flex++;
+                                    return maxWidth / flex;
+                                  }(),
+                                  isHorizontal: false,
+                                  needCtr: false,
+                                  isNested: true,
+                                ),
+                              ),
+                              if (videoDetailController.showReply)
+                                Expanded(
+                                  child: videoReplyPanel(isNested: true),
+                                ),
+                              if (_shouldShowSeasonPanel)
+                                Expanded(child: seasonPanel),
+                            ],
+                          )
+                        : videoTabBarView(
+                            controller: videoDetailController.tabCtr,
+                            children: [
+                              videoIntro(
+                                isHorizontal: false,
+                                needCtr: false,
+                                isNested: true,
+                              ),
+                              if (videoDetailController.showReply)
+                                videoReplyPanel(isNested: true),
+                              if (_shouldShowSeasonPanel) seasonPanel,
+                            ],
+                          ),
                   ),
                 ],
               ),
@@ -1097,20 +1128,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
     );
   });
 
-  Widget get childWhenDisabledAlmostSquare => Obx(() {
-    final isFullScreen = this.isFullScreen;
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      appBar: isFullScreen
-          ? null
-          : AppBar(backgroundColor: Colors.black, toolbarHeight: 0),
-      extendBodyBehindAppBar: true,
-      body: Padding(
-        padding: !isFullScreen ? padding.copyWith(bottom: 0) : EdgeInsets.zero,
-        child: childWhenDisabledAlmostSquareInner(isFullScreen, padding),
-      ),
-    );
-  });
+  Widget get childWhenDisabledAlmostSquare => childWhenDisabledInner(true);
 
   Widget childWhenDisabledAlmostSquareInner(
     bool isFullScreen,
