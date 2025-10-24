@@ -1033,7 +1033,6 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
                 child: videoIntro(
                   width: width,
                   height: introHeight,
-                  needRelated: false,
                   needCtr: false,
                 ),
               ),
@@ -1053,32 +1052,13 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   buildTabbar(
-                    introText: '相关视频',
-                    showIntro:
-                        videoDetailController.isUgc &&
-                        videoDetailController
-                            .plPlayerController
-                            .showRelatedVideo,
+                    needIndicator: false,
+                    showIntro: false,
                   ),
                   Expanded(
                     child: videoTabBarView(
                       controller: videoDetailController.tabCtr,
                       children: [
-                        if (videoDetailController.isUgc &&
-                            videoDetailController
-                                .plPlayerController
-                                .showRelatedVideo)
-                          KeepAliveWrapper(
-                            builder: (context) => CustomScrollView(
-                              controller: introScrollController,
-                              slivers: [
-                                RelatedVideoPanel(
-                                  key: videoRelatedKey,
-                                  heroTag: heroTag,
-                                ),
-                              ],
-                            ),
-                          ),
                         if (videoDetailController.showReply) videoReplyPanel(),
                         if (_shouldShowSeasonPanel) seasonPanel,
                       ],
