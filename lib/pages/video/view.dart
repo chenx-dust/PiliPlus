@@ -181,7 +181,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
             if (!(mode == FullScreenMode.vertical ||
                 (mode == FullScreenMode.auto && isVertical) ||
                 (mode == FullScreenMode.ratio &&
-                    (isVertical || maxHeight / maxWidth < kScreenRatio)))) {
+                    (isVertical || maxHeight / maxWidth <= kScreenRatio)))) {
               landscape();
             }
           });
@@ -1371,7 +1371,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
       child = plPlayer(width: maxWidth, height: maxHeight, isPipMode: true);
     } else if (!videoDetailController.horizontalScreen) {
       child = childWhenDisabled;
-    } else if (maxWidth > maxHeight * kScreenRatio) {
+    } else if (maxWidth >= maxHeight * kScreenRatio) {
       child = childWhenDisabledLandscape;
     } else if (maxWidth * (9 / 16) < (2 / 5) * maxHeight) {
       child = childWhenDisabled;
@@ -1743,7 +1743,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
                 showEpisodes: showEpisodes,
                 onShowMemberPage: onShowMemberPage,
                 isPortrait: isPortrait,
-                isHorizontal: isHorizontal ?? width! > height! * kScreenRatio,
+                isHorizontal: isHorizontal ?? width! >= height! * kScreenRatio,
               ),
               if (needRelated &&
                   videoDetailController

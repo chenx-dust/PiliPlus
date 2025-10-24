@@ -1593,7 +1593,7 @@ class PlPlayerController {
         if ((mode == FullScreenMode.vertical ||
             (mode == FullScreenMode.auto && isVertical) ||
             (mode == FullScreenMode.ratio &&
-                (isVertical || size.height / size.width < kScreenRatio)))) {
+                (isVertical || size.height / size.width <= kScreenRatio)))) {
           await verticalScreenForTwoSeconds();
         } else {
           await landscape();
