@@ -49,7 +49,7 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
-import 'package:flutter_volume_controller/flutter_volume_controller.dart';
+import 'package:volume_controller/volume_controller.dart';
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
 import 'package:media_kit/media_kit.dart';
@@ -494,7 +494,7 @@ class PlPlayerController {
         right: subtitlePaddingH.toDouble(),
         bottom: subtitlePaddingB.toDouble(),
       ),
-      textScaleFactor: 1,
+      textScaler: TextScaler.noScaling,
     );
   }
 
@@ -772,7 +772,7 @@ class PlPlayerController {
         setting.put(SettingBoxKey.superResolutionType, type.index);
       }
     }
-    pp ??= _videoPlayerController!.platform!;
+    pp ??= _videoPlayerController!.platform! as NativePlayer;
     await pp.waitForPlayerInitialization;
     await pp.waitForVideoControllerInitializationIfAttached;
     switch (type) {
@@ -829,7 +829,7 @@ class PlPlayerController {
                 : (isLive ? 16 * 1024 * 1024 : 4 * 1024 * 1024),
           ),
         );
-    final pp = player.platform!;
+    final pp = player.platform! as NativePlayer;
     if (_videoPlayerController == null) {
       if (Utils.isDesktop) {
         pp.setVolume(this.volume.value * 100);
@@ -841,6 +841,9 @@ class PlPlayerController {
         "af",
         "scaletempo2=max-speed=8",
       );
+      await pp.setProperty("profile", "fast");
+      await pp.setProperty("interpolation", "yes");
+      await pp.setProperty("cache", "yes");
       if (Platform.isAndroid) {
         await pp.setProperty("volume-max", "100");
         String ao = Pref.useOpenSLES
@@ -972,7 +975,7 @@ class PlPlayerController {
       if (dataSource.audioSource.isNullOrEmpty) {
         SmartDialog.showToast('音频源为空');
       } else {
-        await (_videoPlayerController!.platform!).setProperty(
+        await ((_videoPlayerController!.platform!) as NativePlayer).setProperty(
           'audio-files',
           Platform.isWindows
               ? dataSource.audioSource!.replaceAll(';', '\\;')
@@ -1373,8 +1376,8 @@ class PlPlayerController {
         if (Utils.isDesktop) {
           _videoPlayerController!.setVolume(volume * 100);
         } else {
-          FlutterVolumeController.updateShowSystemUI(false);
-          await FlutterVolumeController.setVolume(volume);
+          VolumeController.instance.showSystemUI = false;
+          await VolumeController.instance.setVolume(volume);
         }
       } catch (err) {
         if (kDebugMode) debugPrint(err.toString());
