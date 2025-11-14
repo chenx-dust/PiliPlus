@@ -69,7 +69,7 @@ import 'package:extended_nested_scroll_view/extended_nested_scroll_view.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
-import 'package:volume_controller/volume_controller.dart';
+import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 import 'package:get/get.dart' hide ContextExtensionss;
 import 'package:get/get_navigation/src/dialog/dialog_route.dart';
 import 'package:hive/hive.dart';
@@ -1629,7 +1629,7 @@ class VideoDetailController extends GetxController
           SubtitlePrefType.auto =>
             !subtitles.first.lan.startsWith('ai') ||
                     (Utils.isMobile &&
-                        (await VolumeController.instance.getVolume() ?? 0.0) <=
+                        (await FlutterVolumeController.getVolume() ?? 0.0) <=
                             0.0)
                 ? 1
                 : 0,

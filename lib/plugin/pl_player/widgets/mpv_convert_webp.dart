@@ -38,7 +38,8 @@ class MpvConvertWebp {
 
   Future<void> _init() async {
     final enableHA = Pref.enableHA;
-    _ctx = await Initializer(_mpv).create(
+    _ctx = await Initializer.create(
+      NativeLibrary.path,
       _onEvent,
       options: {
         'o': outFile,
@@ -72,7 +73,7 @@ class MpvConvertWebp {
   }
 
   void dispose() {
-    Initializer(_mpv).dispose(_ctx);
+    Initializer.dispose(_ctx);
     _mpv.mpv_terminate_destroy(_ctx);
     if (!_completer.isCompleted) _completer.complete(false);
   }

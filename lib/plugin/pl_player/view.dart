@@ -66,7 +66,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
-import 'package:volume_controller/volume_controller.dart';
+import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart' hide ContextExtensionss;
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -187,14 +187,14 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
     if (Utils.isMobile) {
       Future.microtask(() async {
         try {
-          VolumeController.instance.showSystemUI = true;
+          FlutterVolumeController.updateShowSystemUI(true);
           plPlayerController.volume.value =
-              await VolumeController.instance.getVolume();
-          VolumeController.instance.addListener((double value) {
+              (await FlutterVolumeController.getVolume())!;
+          FlutterVolumeController.addListener((double value) {
             if (mounted &&
                 !plPlayerController.volumeInterceptEventStream.value) {
               plPlayerController.volume.value = value;
-              if (Platform.isIOS && !VolumeController.instance.showSystemUI) {
+              if (Platform.isIOS && !FlutterVolumeController.showSystemUI) {
                 plPlayerController
                   ..volumeIndicator.value = true
                   ..volumeTimer?.cancel()
@@ -316,7 +316,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
     _controlsListener?.cancel();
     animationController.dispose();
     if (Utils.isMobile) {
-      VolumeController.instance.removeListener();
+      FlutterVolumeController.removeListener();
     }
     transformationController.dispose();
     _removeDmAction();
