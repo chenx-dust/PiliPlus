@@ -79,7 +79,7 @@ class SliverGridDelegateWithExtentAndRatio extends SliverGridDelegate {
   final double mainAxisExtent;
 
   bool _debugAssertIsValid(double crossAxisExtent) {
-    assert(crossAxisExtent > 0.0);
+    assert(crossAxisExtent >= 0.0);
     assert(maxCrossAxisExtent > 0.0);
     assert(mainAxisSpacing >= 0.0);
     assert(crossAxisSpacing >= 0.0);
