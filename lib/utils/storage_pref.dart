@@ -606,7 +606,7 @@ abstract class Pref {
       _setting.get(SettingBoxKey.enableAutoExit, defaultValue: true);
 
   static bool get autoPlayEnable =>
-      _setting.get(SettingBoxKey.autoPlayEnable, defaultValue: false);
+      _setting.get(SettingBoxKey.autoPlayEnable, defaultValue: true);
 
   static bool get pipNoDanmaku =>
       _setting.get(SettingBoxKey.pipNoDanmaku, defaultValue: false);
@@ -736,7 +736,7 @@ abstract class Pref {
       _setting.get(SettingBoxKey.expandBuffer, defaultValue: false);
 
   static bool get useOpenSLES =>
-      _setting.get(SettingBoxKey.useOpenSLES, defaultValue: true);
+      _setting.get(SettingBoxKey.useOpenSLES, defaultValue: false);
 
   static bool get enableAi =>
       _setting.get(SettingBoxKey.enableAi, defaultValue: false);
