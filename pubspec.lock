@@ -420,6 +420,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.1"
+  dlna_dart:
+    dependency: "direct main"
+    description:
+      name: dlna_dart
+      sha256: "8a4f0e4f378615c99f2af679dc9f0c72fe4a0fb2f3eea96b637fe691dfcf0649"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.0"
   dynamic_color:
     dependency: "direct main"
     description:
@@ -504,11 +512,12 @@ packages:
   file_picker:
     dependency: "direct main"
     description:
-      name: file_picker
-      sha256: f2d9f173c2c14635cc0e9b14c143c49ef30b4934e8d1d274d6206fcb0086a06f
-      url: "https://pub.dev"
-    source: hosted
-    version: "10.3.3"
+      path: "."
+      ref: mod
+      resolved-ref: "8e6d56a0e4fdc78c9d7e3681cdfd086901764cd4"
+      url: "https://github.com/bggRGjQaUbCoE/flutter_file_picker.git"
+    source: git
+    version: "10.3.6"
   file_selector_linux:
     dependency: transitive
     description:
@@ -774,10 +783,9 @@ packages:
   get:
     dependency: "direct main"
     description:
-      name: get
-      sha256: c79eeb4339f1f3deffd9ec912f8a923834bec55f7b49c9e882b8fef2c139d425
-      url: "https://pub.dev"
-    source: hosted
+      path: "../getx"
+      relative: true
+    source: path
     version: "4.7.2"
   glob:
     dependency: transitive
@@ -1182,10 +1190,10 @@ packages:
     dependency: transitive
     description:
       name: meta
-      sha256: e3641ec5d63ebf0d9b41bd43201a66e3fc79a65db5f61fc181f04cd27aab950c
+      sha256: "23f08335362185a5ea2ad3a4e597f1375e78bce8a040df5c600c8d3552ef2394"
       url: "https://pub.dev"
     source: hosted
-    version: "1.16.0"
+    version: "1.17.0"
   mime:
     dependency: "direct main"
     description:
@@ -1732,10 +1740,10 @@ packages:
     dependency: transitive
     description:
       name: test_api
-      sha256: "522f00f556e73044315fa4585ec3270f1808a4b186c936e612cab0b565ff1e00"
+      sha256: ab2726c1a94d3176a45960b6234466ec367179b87dd74f1611adb1f3b5fb9d55
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.6"
+    version: "0.7.7"
   tray_manager:
     dependency: "direct main"
     description:
@@ -2011,5 +2019,5 @@ packages:
     source: hosted
     version: "3.1.3"
 sdks:
-  dart: ">=3.9.0 <4.0.0"
-  flutter: "3.35.7"
+  dart: ">=3.10.0 <4.0.0"
+  flutter: "3.38.1"

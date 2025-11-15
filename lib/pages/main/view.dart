@@ -288,12 +288,16 @@ class _MainAppState extends State<MainApp>
                       )
               : const SizedBox.shrink()
         : null;
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (bool didPop, Object? result) {
-        if (_mainController.directExitOnBack) {
-          onBack();
-        } else {
+    return Obx(() {
+      bool canPop =
+          _mainController.directExitOnBack ||
+          _mainController.selectedIndex.value == 0;
+      return PopScope(
+        canPop: canPop,
+        onPopInvokedWithResult: (bool didPop, Object? result) {
+          if (didPop) {
+            onBack();
+          }
           if (_mainController.selectedIndex.value != 0) {
             _mainController
               ..setIndex(0)
@@ -302,155 +306,157 @@ class _MainAppState extends State<MainApp>
           } else {
             onBack();
           }
-        }
-      },
-      child: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: SystemUiOverlayStyle(
-          systemNavigationBarColor: Colors.transparent,
-          systemNavigationBarIconBrightness: theme.brightness.reverse,
-        ),
-        child: Scaffold(
-          extendBody: true,
-          resizeToAvoidBottomInset: false,
-          appBar: AppBar(toolbarHeight: 0),
-          body: Padding(
-            padding: EdgeInsets.only(
-              left: useBottomNav ? padding.left : 0.0,
-              right: padding.right,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (!useBottomNav) ...[
-                  _mainController.navigationBars.length > 1
-                      ? context.isTablet && _mainController.optTabletNav
-                            ? Column(
-                                children: [
-                                  const SizedBox(height: 25),
-                                  userAndSearchVertical(theme),
-                                  const Spacer(flex: 2),
-                                  Expanded(
-                                    flex: 5,
-                                    child: SizedBox(
-                                      width: 130,
-                                      child: Obx(
-                                        () => NavigationDrawer(
-                                          backgroundColor: Colors.transparent,
-                                          tilePadding:
-                                              const EdgeInsets.symmetric(
-                                                vertical: 5,
-                                                horizontal: 12,
-                                              ),
-                                          indicatorShape:
-                                              const RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.all(
-                                                  Radius.circular(16),
+        },
+        child: AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle(
+            systemNavigationBarColor: Colors.transparent,
+            systemNavigationBarIconBrightness: theme.brightness.reverse,
+          ),
+          child: Scaffold(
+            extendBody: true,
+            resizeToAvoidBottomInset: false,
+            appBar: AppBar(toolbarHeight: 0),
+            body: Padding(
+              padding: EdgeInsets.only(
+                left: useBottomNav ? padding.left : 0.0,
+                right: padding.right,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (!useBottomNav) ...[
+                    _mainController.navigationBars.length > 1
+                        ? context.isTablet && _mainController.optTabletNav
+                              ? Column(
+                                  children: [
+                                    const SizedBox(height: 25),
+                                    userAndSearchVertical(theme),
+                                    const Spacer(flex: 2),
+                                    Expanded(
+                                      flex: 5,
+                                      child: SizedBox(
+                                        width: 130,
+                                        child: Obx(
+                                          () => NavigationDrawer(
+                                            backgroundColor: Colors.transparent,
+                                            tilePadding:
+                                                const EdgeInsets.symmetric(
+                                                  vertical: 5,
+                                                  horizontal: 12,
                                                 ),
-                                              ),
-                                          onDestinationSelected:
-                                              _mainController.setIndex,
-                                          selectedIndex: _mainController
-                                              .selectedIndex
-                                              .value,
-                                          children: _mainController
-                                              .navigationBars
-                                              .map(
-                                                (e) =>
-                                                    NavigationDrawerDestination(
-                                                      label: Text(e.label),
-                                                      icon: _buildIcon(
-                                                        type: e,
+                                            indicatorShape:
+                                                const RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.all(
+                                                        Radius.circular(16),
                                                       ),
-                                                      selectedIcon: _buildIcon(
-                                                        type: e,
-                                                        selected: true,
+                                                ),
+                                            onDestinationSelected:
+                                                _mainController.setIndex,
+                                            selectedIndex: _mainController
+                                                .selectedIndex
+                                                .value,
+                                            children: _mainController
+                                                .navigationBars
+                                                .map(
+                                                  (e) =>
+                                                      NavigationDrawerDestination(
+                                                        label: Text(e.label),
+                                                        icon: _buildIcon(
+                                                          type: e,
+                                                        ),
+                                                        selectedIcon:
+                                                            _buildIcon(
+                                                              type: e,
+                                                              selected: true,
+                                                            ),
                                                       ),
-                                                    ),
-                                              )
-                                              .toList(),
+                                                )
+                                                .toList(),
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                ],
-                              )
-                            : Obx(
-                                () => NavigationRail(
-                                  groupAlignment: 0.5,
-                                  selectedIndex:
-                                      _mainController.selectedIndex.value,
-                                  onDestinationSelected:
-                                      _mainController.setIndex,
-                                  labelType: NavigationRailLabelType.selected,
-                                  leading: userAndSearchVertical(theme),
-                                  destinations: _mainController.navigationBars
-                                      .map(
-                                        (e) => NavigationRailDestination(
-                                          label: Text(e.label),
-                                          icon: _buildIcon(type: e),
-                                          selectedIcon: _buildIcon(
-                                            type: e,
-                                            selected: true,
+                                  ],
+                                )
+                              : Obx(
+                                  () => NavigationRail(
+                                    groupAlignment: 0.5,
+                                    selectedIndex:
+                                        _mainController.selectedIndex.value,
+                                    onDestinationSelected:
+                                        _mainController.setIndex,
+                                    labelType: NavigationRailLabelType.selected,
+                                    leading: userAndSearchVertical(theme),
+                                    destinations: _mainController.navigationBars
+                                        .map(
+                                          (e) => NavigationRailDestination(
+                                            label: Text(e.label),
+                                            icon: _buildIcon(type: e),
+                                            selectedIcon: _buildIcon(
+                                              type: e,
+                                              selected: true,
+                                            ),
                                           ),
-                                        ),
-                                      )
-                                      .toList(),
-                                ),
-                              )
-                      : Container(
-                          padding: const EdgeInsets.only(top: 10),
-                          width: 80,
-                          child: userAndSearchVertical(theme),
-                        ),
-                  VerticalDivider(
-                    width: 1,
-                    endIndent: padding.bottom,
-                    color: theme.colorScheme.outline.withValues(alpha: 0.06),
+                                        )
+                                        .toList(),
+                                  ),
+                                )
+                        : Container(
+                            padding: const EdgeInsets.only(top: 10),
+                            width: 80,
+                            child: userAndSearchVertical(theme),
+                          ),
+                    VerticalDivider(
+                      width: 1,
+                      endIndent: padding.bottom,
+                      color: theme.colorScheme.outline.withValues(alpha: 0.06),
+                    ),
+                  ],
+                  Expanded(
+                    child: _mainController.mainTabBarView
+                        ? CustomTabBarView(
+                            scrollDirection: useBottomNav
+                                ? Axis.horizontal
+                                : Axis.vertical,
+                            physics: const NeverScrollableScrollPhysics(),
+                            controller: _mainController.controller,
+                            children: _mainController.navigationBars
+                                .map((i) => i.page)
+                                .toList(),
+                          )
+                        : PageView(
+                            physics: const NeverScrollableScrollPhysics(),
+                            controller: _mainController.controller,
+                            children: _mainController.navigationBars
+                                .map((i) => i.page)
+                                .toList(),
+                          ),
                   ),
                 ],
-                Expanded(
-                  child: _mainController.mainTabBarView
-                      ? CustomTabBarView(
-                          scrollDirection: useBottomNav
-                              ? Axis.horizontal
-                              : Axis.vertical,
-                          physics: const NeverScrollableScrollPhysics(),
-                          controller: _mainController.controller,
-                          children: _mainController.navigationBars
-                              .map((i) => i.page)
-                              .toList(),
-                        )
-                      : PageView(
-                          physics: const NeverScrollableScrollPhysics(),
-                          controller: _mainController.controller,
-                          children: _mainController.navigationBars
-                              .map((i) => i.page)
-                              .toList(),
-                        ),
-                ),
-              ],
+              ),
             ),
+            bottomNavigationBar: useBottomNav
+                ? _mainController.hideTabBar
+                      ? StreamBuilder(
+                          stream: _mainController.bottomBarStream?.stream
+                              .distinct(),
+                          initialData: true,
+                          builder: (context, AsyncSnapshot snapshot) {
+                            return AnimatedSlide(
+                              curve: Curves.easeInOutCubicEmphasized,
+                              duration: const Duration(milliseconds: 500),
+                              offset: Offset(0, snapshot.data ? 0 : 1),
+                              child: bottomNav,
+                            );
+                          },
+                        )
+                      : bottomNav
+                : null,
           ),
-          bottomNavigationBar: useBottomNav
-              ? _mainController.hideTabBar
-                    ? StreamBuilder(
-                        stream: _mainController.bottomBarStream?.stream
-                            .distinct(),
-                        initialData: true,
-                        builder: (context, AsyncSnapshot snapshot) {
-                          return AnimatedSlide(
-                            curve: Curves.easeInOutCubicEmphasized,
-                            duration: const Duration(milliseconds: 500),
-                            offset: Offset(0, snapshot.data ? 0 : 1),
-                            child: bottomNav,
-                          );
-                        },
-                      )
-                    : bottomNav
-              : null,
         ),
-      ),
-    );
+      );
+    });
   }
 
   Widget _buildIcon({
