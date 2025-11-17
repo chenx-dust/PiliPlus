@@ -626,7 +626,7 @@ List<SettingsModel> get extraSettings => [
     title: '首页切换页面动画',
     leading: Icon(Icons.home_outlined),
     setKey: SettingBoxKey.mainTabBarView,
-    defaultVal: false,
+    defaultVal: true,
     needReboot: true,
   ),
   const SettingsModel(

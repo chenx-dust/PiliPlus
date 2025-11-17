@@ -433,7 +433,7 @@ abstract class Pref {
       _setting.get(SettingBoxKey.preInitPlayer, defaultValue: false);
 
   static bool get mainTabBarView =>
-      _setting.get(SettingBoxKey.mainTabBarView, defaultValue: false);
+      _setting.get(SettingBoxKey.mainTabBarView, defaultValue: true);
 
   static bool get searchSuggestion =>
       _setting.get(SettingBoxKey.searchSuggestion, defaultValue: true);

@@ -783,9 +783,11 @@ packages:
   get:
     dependency: "direct main"
     description:
-      path: "../getx"
-      relative: true
-    source: path
+      path: "."
+      ref: "version_4.7.2"
+      resolved-ref: "287f890d0770e534568e68d313badec1e6242623"
+      url: "https://github.com/chenx-dust/getx.git"
+    source: git
     version: "4.7.2"
   glob:
     dependency: transitive

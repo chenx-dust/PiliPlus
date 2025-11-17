@@ -338,7 +338,7 @@ List<SettingsModel> get videoSettings => [
       leading: Icon(Icons.speaker_outlined),
       subtitle: '关闭则优先使用AudioTrack输出音频（此项即mpv的--ao），若遇系统音效丢失、无声、音画不同步等问题请尝试关闭。',
       setKey: SettingBoxKey.useOpenSLES,
-      defaultVal: true,
+      defaultVal: false,
     ),
   const SettingsModel(
     settingsType: SettingsType.sw1tch,
