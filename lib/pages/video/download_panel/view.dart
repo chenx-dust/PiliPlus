@@ -20,6 +20,7 @@ import 'package:PiliPlus/utils/date_utils.dart';
 import 'package:PiliPlus/utils/duration_utils.dart';
 import 'package:PiliPlus/utils/id_utils.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
+import 'package:PiliPlus/utils/utils.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
@@ -208,6 +209,7 @@ class _DownloadPanelState extends State<DownloadPanel> {
   }
 
   late final int? vipStatus = Pref.userInfoCache?.vipStatus;
+  @pragma('vm:notify-debugger-on-exception')
   bool _onDownload({
     required int index,
     required ugc.BaseEpisodeItem episode,
@@ -284,8 +286,8 @@ class _DownloadPanelState extends State<DownloadPanel> {
       }
       cidSet.add(cid);
       return true;
-    } catch (e) {
-      if (kDebugMode) rethrow;
+    } catch (e, s) {
+      Utils.reportError(e, s);
       SmartDialog.showToast(e.toString());
     }
     return false;
