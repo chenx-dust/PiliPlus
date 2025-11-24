@@ -50,12 +50,12 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
-import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:path/path.dart' as path;
+import 'package:volume_controller/volume_controller.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -1371,8 +1371,8 @@ class PlPlayerController {
         if (Utils.isDesktop) {
           _videoPlayerController!.setVolume(volume * 100);
         } else {
-          FlutterVolumeController.updateShowSystemUI(false);
-          await FlutterVolumeController.setVolume(volume);
+          VolumeController.instance.showSystemUI = false;
+          await VolumeController.instance.setVolume(volume);
         }
       } catch (err) {
         if (kDebugMode) debugPrint(err.toString());
