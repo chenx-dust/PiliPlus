@@ -35,7 +35,7 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart' hide ContextExtensionss;
-import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
+import 'package:screen_brightness/screen_brightness.dart';
 
 class LiveRoomPage extends StatefulWidget {
   const LiveRoomPage({super.key});
@@ -144,7 +144,7 @@ class _LiveRoomPageState extends State<LiveRoomPage>
     videoPlayerServiceHandler?.onVideoDetailDispose(heroTag);
     WidgetsBinding.instance.removeObserver(this);
     if (Platform.isAndroid && !plPlayerController.setSystemBrightness) {
-      ScreenBrightnessPlatform.instance.resetApplicationScreenBrightness();
+      ScreenBrightness.instance.resetApplicationScreenBrightness();
     }
     PlPlayerController.setPlayCallBack(null);
     plPlayerController

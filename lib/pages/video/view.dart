@@ -64,7 +64,7 @@ import 'package:flutter/services.dart' show SystemUiOverlayStyle;
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart' hide ContextExtensionss;
-import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
+import 'package:screen_brightness/screen_brightness.dart';
 
 class VideoDetailPageV extends StatefulWidget {
   const VideoDetailPageV({super.key});
@@ -335,7 +335,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
 
     if (!Get.previousRoute.startsWith('/video')) {
       if (Platform.isAndroid && !videoDetailController.setSystemBrightness) {
-        ScreenBrightnessPlatform.instance.resetApplicationScreenBrightness();
+        ScreenBrightness.instance.resetApplicationScreenBrightness();
       }
       PlPlayerController.setPlayCallBack(null);
     }
@@ -381,7 +381,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
     WidgetsBinding.instance.removeObserver(this);
 
     if (Platform.isAndroid && !videoDetailController.setSystemBrightness) {
-      ScreenBrightnessPlatform.instance.resetApplicationScreenBrightness();
+      ScreenBrightness.instance.resetApplicationScreenBrightness();
     }
 
     videoDetailController.positionSubscription?.cancel();
@@ -435,14 +435,14 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
           videoDetailController.brightness!,
         );
         if (videoDetailController.brightness != -1.0) {
-          ScreenBrightnessPlatform.instance.setApplicationScreenBrightness(
+          ScreenBrightness.instance.setApplicationScreenBrightness(
             videoDetailController.brightness!,
           );
         } else {
-          ScreenBrightnessPlatform.instance.resetApplicationScreenBrightness();
+          ScreenBrightness.instance.resetApplicationScreenBrightness();
         }
       } else {
-        ScreenBrightnessPlatform.instance.resetApplicationScreenBrightness();
+        ScreenBrightness.instance.resetApplicationScreenBrightness();
       }
     }
     super.didPopNext();

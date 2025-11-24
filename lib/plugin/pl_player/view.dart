@@ -71,7 +71,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart' hide ContextExtensionss;
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:media_kit_video/media_kit_video.dart';
-import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
+import 'package:screen_brightness/screen_brightness.dart';
 import 'package:window_manager/window_manager.dart';
 
 class PLVideoPlayer extends StatefulWidget {
@@ -201,8 +201,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
 
       Future.microtask(() async {
         try {
-          _brightnessValue.value =
-              await ScreenBrightnessPlatform.instance.application;
+          _brightnessValue.value = await ScreenBrightness.instance.application;
 
           void listener(double value) {
             if (mounted) {
@@ -211,13 +210,9 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
           }
 
           _listener = Platform.isIOS || plPlayerController.setSystemBrightness
-              ? ScreenBrightnessPlatform
-                    .instance
-                    .onSystemScreenBrightnessChanged
+              ? ScreenBrightness.instance.onSystemScreenBrightnessChanged
                     .listen(listener)
-              : ScreenBrightnessPlatform
-                    .instance
-                    .onApplicationScreenBrightnessChanged
+              : ScreenBrightness.instance.onApplicationScreenBrightnessChanged
                     .listen(listener);
         } catch (_) {}
       });
@@ -272,11 +267,11 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
   Future<void> setBrightness(double value) async {
     try {
       if (Platform.isIOS || plPlayerController.setSystemBrightness) {
-        await ScreenBrightnessPlatform.instance.setSystemScreenBrightness(
+        await ScreenBrightness.instance.setSystemScreenBrightness(
           value,
         );
       } else {
-        await ScreenBrightnessPlatform.instance.setApplicationScreenBrightness(
+        await ScreenBrightness.instance.setApplicationScreenBrightness(
           value,
         );
       }
@@ -1379,8 +1374,8 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
                 () => SubtitleView(
                   controller: videoController,
                   configuration: plPlayerController.subtitleConfig.value,
-                  enableDragSubtitle: plPlayerController.enableDragSubtitle,
-                  onUpdatePadding: plPlayerController.onUpdatePadding,
+                  // enableDragSubtitle: plPlayerController.enableDragSubtitle,
+                  // onUpdatePadding: plPlayerController.onUpdatePadding,
                 ),
               ),
             ),
