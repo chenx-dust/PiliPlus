@@ -445,7 +445,15 @@ class PlPlayerController {
   bool enableHeart = true;
 
   late final bool enableHA = Pref.enableHA;
-  late final String hwdec = Pref.hardwareDecoding;
+  late final bool enableHDR = Platform.isAndroid && Pref.enableHDR;
+
+  bool? _canHDR;
+  String get hwdec =>
+      enableHDR && _canHDR == true ? 'mediacodec,auto' : Pref.hardwareDecoding;
+  String get vo =>
+      enableHDR && _canHDR == true ? 'mediacodec_embed,gpu' : Pref.videoOutput;
+  bool get platformView => Pref.platformView || (enableHDR && _canHDR == true);
+  late final bool platformViewHCPP = Pref.platformViewHCPP;
 
   late final progressType =
       BtmProgressBehavior.values[Pref.btmProgressBehavior];
@@ -498,7 +506,7 @@ class PlPlayerController {
         right: subtitlePaddingH.toDouble(),
         bottom: subtitlePaddingB.toDouble(),
       ),
-      textScaleFactor: 1,
+      textScaler: TextScaler.noScaling,
     );
   }
 
@@ -657,6 +665,7 @@ class PlPlayerController {
     String? dirPath,
     String? typeTag,
     int? mediaType,
+    bool? canHDR,
   }) async {
     try {
       this.dirPath = dirPath;
@@ -683,6 +692,7 @@ class PlPlayerController {
       _epid = epid;
       _seasonId = seasonId;
       _pgcType = pgcType;
+      _canHDR = canHDR;
 
       if (showSeekPreview) {
         _clearPreview();
@@ -775,7 +785,7 @@ class PlPlayerController {
         setting.put(SettingBoxKey.superResolutionType, type.index);
       }
     }
-    pp ??= _videoPlayerController!.platform!;
+    pp ??= _videoPlayerController!.platform! as NativePlayer;
     await pp.waitForPlayerInitialization;
     await pp.waitForVideoControllerInitializationIfAttached;
     switch (type) {
@@ -833,7 +843,7 @@ class PlPlayerController {
             logLevel: kDebugMode ? MPVLogLevel.warn : MPVLogLevel.error,
           ),
         );
-    final pp = player.platform!;
+    final pp = player.platform! as NativePlayer;
     if (_videoPlayerController == null) {
       if (Utils.isDesktop) {
         pp.setVolume(this.volume.value * 100);
@@ -881,7 +891,10 @@ class PlPlayerController {
       configuration: VideoControllerConfiguration(
         enableHardwareAcceleration: enableHA,
         androidAttachSurfaceAfterVideoParameters: false,
+        vo: vo.isEmpty ? null : vo,
         hwdec: enableHA ? hwdec : null,
+        usePlatformView: platformView,
+        useHCPP: platformViewHCPP,
       ),
     );
 
@@ -963,7 +976,7 @@ class PlPlayerController {
       if (dataSource.audioSource.isNullOrEmpty) {
         SmartDialog.showToast('音频源为空');
       } else {
-        await (_videoPlayerController!.platform!).setProperty(
+        await (_videoPlayerController!.platform! as NativePlayer).setProperty(
           'audio-files',
           Platform.isWindows
               ? dataSource.audioSource!.replaceAll(';', '\\;')

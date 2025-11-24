@@ -178,8 +178,8 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
       Future.microtask(() async {
         try {
           VolumeController.instance.showSystemUI = true;
-          plPlayerController.volume.value =
-              (await VolumeController.instance.getVolume())!;
+          plPlayerController.volume.value = (await VolumeController.instance
+              .getVolume())!;
           VolumeController.instance.addListener((double value) {
             if (mounted &&
                 !plPlayerController.volumeInterceptEventStream.value) {
@@ -1374,8 +1374,8 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
                 () => SubtitleView(
                   controller: videoController,
                   configuration: plPlayerController.subtitleConfig.value,
-                  // enableDragSubtitle: plPlayerController.enableDragSubtitle,
-                  // onUpdatePadding: plPlayerController.onUpdatePadding,
+                  enableDragSubtitle: plPlayerController.enableDragSubtitle,
+                  onUpdatePadding: plPlayerController.onUpdatePadding,
                 ),
               ),
             ),

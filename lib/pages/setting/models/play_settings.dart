@@ -340,4 +340,30 @@ List<SettingsModel> get playSettings => [
     setKey: SettingBoxKey.tempPlayerConf,
     defaultVal: false,
   ),
+  if (Platform.isAndroid) ...[
+    const SettingsModel(
+      settingsType: SettingsType.sw1tch,
+      title: '启用 HDR 视频',
+      subtitle: '在 HDR 视频中启用平台渲染，调用合适的解码输出参数',
+      leading: Icon(Icons.video_settings_outlined),
+      setKey: SettingBoxKey.enableHDR,
+      defaultVal: true,
+    ),
+    const SettingsModel(
+      settingsType: SettingsType.sw1tch,
+      title: '使用平台视图',
+      subtitle: '使用平台视图渲染播放器，支持 HDR 视频',
+      leading: Icon(Icons.video_settings_outlined),
+      setKey: SettingBoxKey.platformView,
+      defaultVal: false,
+    ),
+    const SettingsModel(
+      settingsType: SettingsType.sw1tch,
+      title: '平台视图使用 HCPP 渲染',
+      subtitle: '使用性能与效果更优的 HCPP 渲染平台视图，要求设备 Android 14 (SDK 34) 及以上且支持 Vulkan',
+      leading: Icon(Icons.video_settings_outlined),
+      setKey: SettingBoxKey.platformViewHCPP,
+      defaultVal: false,
+    ),
+  ],
 ];

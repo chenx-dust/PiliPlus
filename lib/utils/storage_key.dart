@@ -19,6 +19,7 @@ abstract class SettingBoxKey {
       expandBuffer = 'expandBuffer',
       hardwareDecoding = 'hardwareDecoding',
       videoSync = 'videoSync',
+      videoOutput = 'videoOutput',
       p1080 = 'p1080',
       enableAutoBrightness = 'enableAutoBrightness',
       enableAutoEnter = 'enableAutoEnter',
@@ -224,6 +225,9 @@ abstract class SettingBoxKey {
       enableGradientBg = 'enableGradientBg',
       navBarSort = 'navBarSort',
       tempPlayerConf = 'tempPlayerConf',
+      enableHDR = 'enableHDR',
+      platformView = 'platformView',
+      platformViewHCPP = 'platformViewHCPP',
       reduceLuxColor = 'reduceLuxColor',
       liveCdnUrl = 'liveCdnUrl';
 }

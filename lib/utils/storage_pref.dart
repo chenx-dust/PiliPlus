@@ -23,6 +23,7 @@ import 'package:PiliPlus/plugin/pl_player/models/bottom_progress_behavior.dart';
 import 'package:PiliPlus/plugin/pl_player/models/fullscreen_mode.dart';
 import 'package:PiliPlus/plugin/pl_player/models/hwdec_type.dart';
 import 'package:PiliPlus/plugin/pl_player/models/play_repeat.dart';
+import 'package:PiliPlus/plugin/pl_player/models/video_output.dart';
 import 'package:PiliPlus/utils/context_ext.dart';
 import 'package:PiliPlus/utils/extension.dart';
 import 'package:PiliPlus/utils/global_data.dart';
@@ -230,13 +231,16 @@ abstract class Pref {
 
   static String get hardwareDecoding => _setting.get(
     SettingBoxKey.hardwareDecoding,
-    defaultValue: Platform.isAndroid
-        ? HwDecType.autoSafe.hwdec
-        : HwDecType.auto.hwdec,
+    defaultValue: HwDecType.auto.hwdec,
   );
 
   static String get videoSync =>
       _setting.get(SettingBoxKey.videoSync, defaultValue: 'display-resample');
+
+  static String get videoOutput => _setting.get(
+    SettingBoxKey.videoOutput,
+    defaultValue: VoType.gpu.vo,
+  );
 
   static CDNService get defaultCDNService {
     if (_setting.get(SettingBoxKey.CDNService) case final String cdnName) {
@@ -791,6 +795,15 @@ abstract class Pref {
 
   static bool get tempPlayerConf =>
       _setting.get(SettingBoxKey.tempPlayerConf, defaultValue: false);
+
+  static bool get enableHDR =>
+      _setting.get(SettingBoxKey.enableHDR, defaultValue: true);
+
+  static bool get platformView =>
+      _setting.get(SettingBoxKey.platformView, defaultValue: false);
+
+  static bool get platformViewHCPP =>
+      _setting.get(SettingBoxKey.platformViewHCPP, defaultValue: false);
 
   static Color? get reduceLuxColor {
     final int? color = _setting.get(SettingBoxKey.reduceLuxColor);

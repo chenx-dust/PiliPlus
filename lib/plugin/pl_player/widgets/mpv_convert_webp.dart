@@ -11,7 +11,6 @@ import 'package:get/get_rx/get_rx.dart';
 import 'package:media_kit/ffi/src/allocation.dart';
 import 'package:media_kit/ffi/src/utf8.dart';
 import 'package:media_kit/generated/libmpv/bindings.dart' as generated;
-import 'package:media_kit/media_kit.dart';
 import 'package:media_kit/src/player/native/core/initializer.dart';
 import 'package:media_kit/src/player/native/core/native_library.dart';
 
@@ -40,8 +39,7 @@ class MpvConvertWebp {
 
   Future<void> _init() async {
     final enableHA = Pref.enableHA;
-    _ctx = await Initializer.create(
-      NativeLibrary.path,
+    _ctx = await Initializer(_mpv).create(
       _onEvent,
       options: {
         'o': outFile,
@@ -57,25 +55,17 @@ class MpvConvertWebp {
               '${Pref.hardwareDecoding},auto-copy', // transcode only support copy
       },
     );
-    NativePlayer.setHeader(
-      const {
-        'user-agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
-        'referer': HttpString.baseUrl,
-      },
-      _mpv,
-      _ctx,
-    );
+    _setHeader();
     if (progress != null) {
       _observeProperty('time-pos');
     }
-    final level = (kDebugMode ? 'info' : 'error').toNativeUtf8();
+    final level = (kDebugMode ? 'info' : 'error').toNativeUtf8().cast<Int8>();
     _mpv.mpv_request_log_messages(_ctx, level);
     calloc.free(level);
   }
 
   void dispose() {
-    Initializer.dispose(_ctx);
+    Initializer(_mpv).dispose(_ctx);
     _mpv.mpv_terminate_destroy(_ctx);
     if (!_completer.isCompleted) _completer.complete(false);
   }
@@ -90,7 +80,7 @@ class MpvConvertWebp {
     switch (event.ref.event_id) {
       case generated.mpv_event_id.MPV_EVENT_PROPERTY_CHANGE:
         final prop = event.ref.data.cast<generated.mpv_event_property>().ref;
-        if (prop.name.toDartString() == 'time-pos' &&
+        if (prop.name.cast<Utf8>().toDartString() == 'time-pos' &&
             prop.format == generated.mpv_format.MPV_FORMAT_DOUBLE) {
           progress!.value = (prop.data.cast<Double>().value - start) / duration;
         }
@@ -100,9 +90,9 @@ class MpvConvertWebp {
         break;
       case generated.mpv_event_id.MPV_EVENT_LOG_MESSAGE:
         final log = event.ref.data.cast<generated.mpv_event_log_message>().ref;
-        final prefix = log.prefix.toDartString().trim();
-        final level = log.level.toDartString().trim();
-        final text = log.text.toDartString().trim();
+        final prefix = log.prefix.cast<Utf8>().toDartString().trim();
+        final level = log.level.cast<Utf8>().toDartString().trim();
+        final text = log.text.cast<Utf8>().toDartString().trim();
         debugPrint('WebpConvert: $level $prefix : $text');
         if (kDebugMode) {
           _success = level != 'error' && level != 'fatal';
@@ -120,8 +110,8 @@ class MpvConvertWebp {
   }
 
   void _command(List<String> args) {
-    final pointers = args.map((e) => e.toNativeUtf8()).toList();
-    final arr = calloc<Pointer<Uint8>>(128);
+    final pointers = args.map((e) => e.toNativeUtf8().cast<Int8>()).toList();
+    final arr = calloc<Pointer<Int8>>(128);
     for (int i = 0; i < args.length; i++) {
       arr[i] = pointers[i];
     }
@@ -133,7 +123,7 @@ class MpvConvertWebp {
   }
 
   void _observeProperty(String property) {
-    final name = property.toNativeUtf8();
+    final name = property.toNativeUtf8().cast<Int8>();
     _mpv.mpv_observe_property(
       _ctx,
       property.hashCode,
@@ -142,6 +132,47 @@ class MpvConvertWebp {
     );
 
     calloc.free(name);
+  }
+
+  void _setHeader() {
+    final property = 'http-header-fields'.toNativeUtf8();
+    // Allocate & fill the [mpv_node] with the headers.
+    final value = calloc<generated.mpv_node>();
+    final valRef = value.ref
+      ..format = generated.mpv_format.MPV_FORMAT_NODE_ARRAY;
+    valRef.u.list = calloc<generated.mpv_node_list>();
+    final valList = valRef.u.list.ref
+      ..num = 2
+      ..values = calloc<generated.mpv_node>(2);
+
+    const entries = [
+      (
+      'user-agent',
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
+      ),
+      ('referer', HttpString.baseUrl),
+    ];
+    for (int i = 0; i < 2; i++) {
+      final (k, v) = entries[i];
+      valList.values[i]
+        ..format = generated.mpv_format.MPV_FORMAT_STRING
+        ..u.string = '$k: $v'.toNativeUtf8().cast();
+    }
+    _mpv.mpv_set_property(
+      _ctx,
+      property.cast(),
+      generated.mpv_format.MPV_FORMAT_NODE,
+      value.cast(),
+    );
+    // Free the allocated memory.
+    calloc.free(property);
+    for (int i = 0; i < valList.num; i++) {
+      calloc.free(valList.values[i].u.string);
+    }
+    calloc
+      ..free(valList.values)
+      ..free(valRef.u.list)
+      ..free(value);
   }
 }
 
