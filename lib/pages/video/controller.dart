@@ -10,6 +10,7 @@ import 'package:PiliPlus/http/constants.dart';
 import 'package:PiliPlus/http/fav.dart';
 import 'package:PiliPlus/http/init.dart';
 import 'package:PiliPlus/http/loading_state.dart';
+import 'package:PiliPlus/http/sponsor_block.dart';
 import 'package:PiliPlus/http/ua_type.dart';
 import 'package:PiliPlus/http/user.dart';
 import 'package:PiliPlus/http/video.dart';
@@ -63,7 +64,6 @@ import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
 import 'package:PiliPlus/utils/utils.dart';
 import 'package:PiliPlus/utils/video_utils.dart';
-import 'package:dio/dio.dart' show Options;
 import 'package:easy_debounce/easy_throttle.dart';
 import 'package:extended_nested_scroll_view/extended_nested_scroll_view.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
@@ -135,7 +135,7 @@ class VideoDetailController extends GetxController
   // 亮度
   double? brightness;
 
-  late final headerCtrKey = GlobalKey<HeaderControlState>();
+  late final headerCtrKey = GlobalKey<TimeBatteryMixin>();
 
   Box setting = GStorage.setting;
 
@@ -274,7 +274,9 @@ class VideoDetailController extends GetxController
 
   late final watchProgress = GStorage.watchProgress;
   void cacheLocalProgress() {
-    if (playedTime case final playedTime?) {
+    if (plPlayerController.playerStatus.completed) {
+      watchProgress.put(cid.value.toString(), entry.totalTimeMilli);
+    } else if (playedTime case final playedTime?) {
       watchProgress.put(cid.value.toString(), playedTime.inMilliseconds);
     }
   }
@@ -493,25 +495,15 @@ class VideoDetailController extends GetxController
       plPlayerController.blockColor[segment.index];
   late RxString videoLabel = ''.obs;
 
-  String get blockServer => plPlayerController.blockServer;
-
   Timer? skipTimer;
   late final listKey = GlobalKey<AnimatedListState>();
   late final List listData = [];
 
   void _vote(String uuid, int type) {
-    Request()
-        .post(
-          '$blockServer/api/voteOnSponsorTime',
-          queryParameters: {
-            'UUID': uuid,
-            'userID': Pref.blockUserID,
-            'type': type,
-          },
-        )
-        .then((res) {
-          SmartDialog.showToast(res.statusCode == 200 ? '投票成功' : '投票失败');
-        });
+    SponsorBlock.voteOnSponsorTime(
+      uuid: uuid,
+      type: type,
+    ).then((i) => SmartDialog.showToast(i.isSuccess ? '投票成功' : '投票失败: $i'));
   }
 
   void _showCategoryDialog(BuildContext context, SegmentModel segment) {
@@ -529,20 +521,14 @@ class VideoDetailController extends GetxController
                     dense: true,
                     onTap: () {
                       Get.back();
-                      Request()
-                          .post(
-                            '$blockServer/api/voteOnSponsorTime',
-                            queryParameters: {
-                              'UUID': segment.UUID,
-                              'userID': Pref.blockUserID,
-                              'category': item.name,
-                            },
-                          )
-                          .then((res) {
-                            SmartDialog.showToast(
-                              '类别更改${res.statusCode == 200 ? '成功' : '失败'}',
-                            );
-                          });
+                      SponsorBlock.voteOnSponsorTime(
+                        uuid: segment.UUID,
+                        category: item,
+                      ).then((i) {
+                        SmartDialog.showToast(
+                          '类别更改${i.isSuccess ? '成功' : '失败: $i'}',
+                        );
+                      });
                     },
                     title: Text.rich(
                       TextSpan(
@@ -737,18 +723,19 @@ class VideoDetailController extends GetxController
     videoLabel.value = '';
     segmentList.clear();
     segmentProgressList.clear();
-    final result = await Request().get(
-      '$blockServer/api/skipSegments',
-      queryParameters: {
-        'videoID': bvid,
-        'cid': cid.value,
-      },
-      options: Options(validateStatus: (status) => true),
+
+    final result = await SponsorBlock.getSkipSegments(
+      bvid: bvid,
+      cid: cid.value,
     );
-    if (result.statusCode == 200) {
-      if (result.data case List list) {
-        handleSBData(list.map((e) => SegmentItemModel.fromJson(e)).toList());
-      }
+    switch (result) {
+      case Success<List<SegmentItemModel>>(:final response):
+        handleSBData(response);
+      case Error(:final code) when code != 404:
+        if (kDebugMode) {
+          result.toast();
+        }
+      default:
     }
   }
 
@@ -1014,10 +1001,7 @@ class VideoDetailController extends GetxController
           _showBlockToast('已跳过${item.segmentType.shortTitle}片段');
         }
         if (_isBlock && Pref.blockTrack) {
-          Request().post(
-            '$blockServer/api/viewedVideoSponsorTime',
-            queryParameters: {'UUID': item.UUID},
-          );
+          SponsorBlock.viewedVideoSponsorTime(item.UUID);
         }
       } else {
         _showBlockToast('已跳至${item.segmentType.shortTitle}');
@@ -1201,11 +1185,11 @@ class VideoDetailController extends GetxController
       dirPath: isFileSource ? args['dirPath'] : null,
       typeTag: isFileSource ? entry.typeTag : null,
       mediaType: isFileSource ? entry.mediaType : null,
-      canHDR: currentVideoQa.value?.isHDR,
+      canHDR: curHighestVideoQa?.isHDR,
     );
 
     if (!isFileSource) {
-      if (plPlayerController.enableSponsorBlock) {
+      if (plPlayerController.enableBlock) {
         initSkip();
       }
 
@@ -1726,7 +1710,7 @@ class VideoDetailController extends GetxController
       }
 
       // sponsor block
-      if (plPlayerController.enableSponsorBlock) {
+      if (plPlayerController.enableBlock) {
         _lastPos = null;
         positionSubscription?.cancel();
         positionSubscription = null;
@@ -1818,7 +1802,7 @@ class VideoDetailController extends GetxController
   @pragma('vm:notify-debugger-on-exception')
   bool onSkipSegment() {
     try {
-      if (plPlayerController.enableSponsorBlock) {
+      if (plPlayerController.enableBlock) {
         if (listData.lastOrNull case SegmentModel item) {
           onSkip(item, isSeek: false);
           onRemoveItem(listData.indexOf(item), item);

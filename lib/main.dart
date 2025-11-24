@@ -249,6 +249,7 @@ class MyApp extends StatelessWidget {
             variant: variant,
             // dynamicSchemeVariant: dynamicSchemeVariant,
             // tones: FlexTones.soft(Brightness.light),
+            useExpressiveOnContainerColors: false,
           );
           darkColorScheme = SeedColorScheme.fromSeeds(
             primaryKey: brandColor,
@@ -256,6 +257,7 @@ class MyApp extends StatelessWidget {
             variant: variant,
             // dynamicSchemeVariant: dynamicSchemeVariant,
             // tones: FlexTones.soft(Brightness.dark),
+            useExpressiveOnContainerColors: false,
           );
         }
 
@@ -312,14 +314,18 @@ class MyApp extends StatelessWidget {
                     if (plCtr.isFullScreen.value) {
                       plCtr
                         ..triggerFullScreen(status: false)
-                        ..controlsLock.value = false;
+                        ..controlsLock.value = false
+                        ..showControls.value = false;
                       return;
                     }
 
                     if (plCtr.isDesktopPip) {
-                      plCtr.exitDesktopPip().whenComplete(
-                        () => plCtr.initialFocalPoint = Offset.zero,
-                      );
+                      plCtr
+                        ..exitDesktopPip().whenComplete(
+                          () => plCtr.initialFocalPoint = Offset.zero,
+                        )
+                        ..controlsLock.value = false
+                        ..showControls.value = false;
                       return;
                     }
                   }

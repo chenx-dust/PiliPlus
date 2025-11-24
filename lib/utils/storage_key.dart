@@ -29,7 +29,8 @@ abstract class SettingBoxKey {
       keyboardControl = 'keyboardControl',
       pauseOnMinimize = 'pauseOnMinimize',
       pgcSkipType = 'pgcSkipType',
-      audioPlayMode = 'audioPlayMode';
+      audioPlayMode = 'audioPlayMode',
+      showBatteryLevel = 'showBatteryLevel';
 
   static const String enableVerticalExpand = 'enableVerticalExpand',
       feedBackEnable = 'feedBackEnable',
