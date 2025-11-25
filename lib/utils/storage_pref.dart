@@ -803,7 +803,7 @@ abstract class Pref {
       _setting.get(SettingBoxKey.platformView, defaultValue: false);
 
   static bool get platformViewHCPP =>
-      _setting.get(SettingBoxKey.platformViewHCPP, defaultValue: false);
+      _setting.get(SettingBoxKey.platformViewHCPP, defaultValue: true);
 
   static Color? get reduceLuxColor {
     final int? color = _setting.get(SettingBoxKey.reduceLuxColor);
