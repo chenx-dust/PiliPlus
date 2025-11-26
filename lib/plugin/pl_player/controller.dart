@@ -840,7 +840,7 @@ class PlPlayerController {
             bufferSize: Pref.expandBuffer
                 ? (isLive ? 64 * 1024 * 1024 : 32 * 1024 * 1024)
                 : (isLive ? 16 * 1024 * 1024 : 4 * 1024 * 1024),
-            logLevel: kDebugMode ? MPVLogLevel.warn : MPVLogLevel.error,
+            logLevel: kDebugMode ? MPVLogLevel.v : MPVLogLevel.error,
           ),
         );
     final pp = player.platform! as NativePlayer;
@@ -1132,7 +1132,7 @@ class PlPlayerController {
           if (log.level == 'error' || log.level == 'fatal') {
             Utils.reportError(log.text, null, log.prefix);
           } else {
-            debugPrint(log.toString());
+            debugPrint('${log.prefix}: ${log.text}');
           }
         })),
       videoPlayerController!.stream.error.listen((String event) {
