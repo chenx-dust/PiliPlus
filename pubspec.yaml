@@ -128,7 +128,7 @@ dependencies:
     git:
       url: https://github.com/bggRGjQaUbCoE/auto_orientation.git
       ref: master
-  protobuf: ^5.0.0
+  protobuf: ^6.0.0
   # animations: ^2.0.11
 
   # 获取appx信息
@@ -240,13 +240,6 @@ dependencies:
   http2: any
   screen_retriever: any
   characters: any
-
-dependency_overrides:
-  media_kit_libs_android_video:
-    git:
-      url: https://github.com/chenx-dust/media-kit.git
-      path: libs/android/media_kit_libs_android_video
-      ref: PiliPlus
 
 dev_dependencies:
   flutter_test:
