@@ -231,7 +231,9 @@ abstract class Pref {
 
   static String get hardwareDecoding => _setting.get(
     SettingBoxKey.hardwareDecoding,
-    defaultValue: HwDecType.auto.hwdec,
+    defaultValue: Platform.isAndroid
+        ? HwDecType.autoSafe.hwdec
+        : HwDecType.auto.hwdec,
   );
 
   static String get videoSync =>
