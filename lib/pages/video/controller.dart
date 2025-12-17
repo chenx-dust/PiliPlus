@@ -1611,7 +1611,7 @@ class VideoDetailController extends GetxController
           SubtitlePrefType.auto =>
             !subtitles.first.lan.startsWith('ai') ||
                     (PlatformUtils.isMobile &&
-                        (await VolumeController.instance.getVolume() ?? 0.0) <=
+                        (await VolumeController.instance.getVolume()) <=
                             0.0)
                 ? 1
                 : 0,

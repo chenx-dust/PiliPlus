@@ -1026,8 +1026,6 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
       return childSplit(16 / 9);
     }
     final introHeight = maxHeight - height - padding.top;
-    final showIntro =
-        videoDetailController.isUgc && videoDetailController.showRelatedVideo;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

@@ -391,14 +391,13 @@ List<SettingsModel> get videoSettings => [
       }
     },
   ),
-  SettingsModel(
-    settingsType: SettingsType.normal,
+  NormalModel(
     title: '视频输出',
     leading: const Icon(Icons.video_settings_outlined),
     getSubtitle: () => '当前：${Pref.videoOutput}（此项即mpv的--vo）',
-    onTap: (setState) async {
+    onTap: (context, setState) async {
       final result = await showDialog<List<String>>(
-        context: Get.context!,
+        context: context,
         builder: (context) {
           return OrderedMultiSelectDialog<String>(
             title: '视频输出',

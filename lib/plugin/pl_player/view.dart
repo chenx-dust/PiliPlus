@@ -191,7 +191,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
         try {
           VolumeController.instance.showSystemUI = true;
           plPlayerController.volume.value = (await VolumeController.instance
-              .getVolume())!;
+              .getVolume());
           VolumeController.instance.addListener((double value) {
             if (mounted &&
                 !plPlayerController.volumeInterceptEventStream.value) {
