@@ -10,7 +10,7 @@ import 'package:PiliPlus/models_new/live/live_area_list/area_list.dart';
 import 'package:PiliPlus/pages/live_area/controller.dart';
 import 'package:PiliPlus/pages/live_area_detail/view.dart';
 import 'package:PiliPlus/pages/search/widgets/search_text.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/iterable_ext.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_sortable_wrap/sortable_wrap.dart';
 import 'package:get/get.dart';
@@ -79,9 +79,9 @@ class _LiveAreaPageState extends State<LiveAreaPage> {
     return switch (loadingState) {
       Loading() => const SizedBox.shrink(),
       Success(:var response) =>
-        response?.isNotEmpty == true
+        response != null && response.isNotEmpty
             ? DefaultTabController(
-                length: response!.length,
+                length: response.length,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -191,7 +191,7 @@ class _LiveAreaPageState extends State<LiveAreaPage> {
               ),
             ),
             const SizedBox(height: 8),
-            if (list?.isNotEmpty == true) ...[
+            if (list != null && list.isNotEmpty) ...[
               SortableWrap(
                 onSortStart: (index) {
                   _controller.isEditing.value = true;
@@ -201,7 +201,7 @@ class _LiveAreaPageState extends State<LiveAreaPage> {
                 },
                 spacing: 12,
                 runSpacing: 8,
-                children: list!
+                children: list
                     .map(
                       (item) => _favTagItem(
                         theme: theme,

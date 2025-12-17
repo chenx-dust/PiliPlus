@@ -25,7 +25,7 @@ import 'package:PiliPlus/models_new/video/video_detail/section.dart';
 import 'package:PiliPlus/models_new/video/video_detail/ugc_season.dart';
 import 'package:PiliPlus/models_new/video/video_shot/data.dart';
 import 'package:PiliPlus/pages/common/common_intro_controller.dart';
-import 'package:PiliPlus/pages/danmaku/dnamaku_model.dart';
+import 'package:PiliPlus/pages/danmaku/danmaku_model.dart';
 import 'package:PiliPlus/pages/live_room/widgets/bottom_control.dart'
     as live_bottom;
 import 'package:PiliPlus/pages/video/controller.dart';
@@ -49,14 +49,16 @@ import 'package:PiliPlus/plugin/pl_player/widgets/forward_seek.dart';
 import 'package:PiliPlus/plugin/pl_player/widgets/mpv_convert_webp.dart';
 import 'package:PiliPlus/plugin/pl_player/widgets/play_pause_btn.dart';
 import 'package:PiliPlus/utils/duration_utils.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/theme_ext.dart';
 import 'package:PiliPlus/utils/id_utils.dart';
 import 'package:PiliPlus/utils/image_utils.dart';
 import 'package:PiliPlus/utils/path_utils.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/storage_key.dart';
 import 'package:PiliPlus/utils/utils.dart';
 import 'package:canvas_danmaku/canvas_danmaku.dart';
+import 'package:collection/collection.dart';
 import 'package:dio/dio.dart';
 import 'package:easy_debounce/easy_throttle.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -184,7 +186,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
     );
     videoController = plPlayerController.videoController!;
 
-    if (Utils.isMobile) {
+    if (PlatformUtils.isMobile) {
       Future.microtask(() async {
         try {
           VolumeController.instance.showSystemUI = true;
@@ -306,7 +308,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
     _listener?.cancel();
     _controlsListener?.cancel();
     animationController.dispose();
-    if (Utils.isMobile) {
+    if (PlatformUtils.isMobile) {
       VolumeController.instance.removeListener();
     }
     transformationController.dispose();
@@ -414,7 +416,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
               width: widgetWidth,
               height: 30,
               tooltip: '高能进度条',
-              icon: videoDetailController.showDmTreandChart.value
+              icon: videoDetailController.showDmTrendChart.value
                   ? const Icon(
                       Icons.show_chart,
                       size: 22,
@@ -436,8 +438,8 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
                         ),
                       ],
                     ),
-              onTap: () => videoDetailController.showDmTreandChart.value =
-                  !videoDetailController.showDmTreandChart.value,
+              onTap: () => videoDetailController.showDmTrendChart.value =
+                  !videoDetailController.showDmTrendChart.value,
             );
           }
           return const SizedBox.shrink();
@@ -499,7 +501,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
                   videoDetailController.showVP.value =
                       !videoDetailController.showVP.value;
                 },
-                onSecondaryTap: Utils.isMobile
+                onSecondaryTap: PlatformUtils.isMobile
                     ? null
                     : () => videoDetailController.showVP.value =
                           !videoDetailController.showVP.value,
@@ -650,7 +652,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
 
       /// 字幕
       BottomControlType.subtitle => Obx(
-        () => videoDetailController.subtitles.isEmpty == true
+        () => videoDetailController.subtitles.isEmpty
             ? const SizedBox.shrink()
             : PopupMenuButton<int>(
                 tooltip: '字幕',
@@ -760,14 +762,14 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
           }
           final List<FormatItem> videoFormat = videoInfo.supportFormats!;
           final int totalQaSam = videoFormat.length;
-          int userfulQaSam = 0;
+          int usefulQaSam = 0;
           final List<VideoItem> video = videoInfo.dash!.video!;
           final Set<int> idSet = {};
           for (final VideoItem item in video) {
             final int id = item.id!;
             if (!idSet.contains(id)) {
               idSet.add(id);
-              userfulQaSam++;
+              usefulQaSam++;
             }
           }
           return PopupMenuButton<int>(
@@ -780,7 +782,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
                 totalQaSam,
                 (index) {
                   final item = videoFormat[index];
-                  final enabled = index >= totalQaSam - userfulQaSam;
+                  final enabled = index >= totalQaSam - usefulQaSam;
                   return PopupMenuItem<int>(
                     enabled: enabled,
                     height: 35,
@@ -975,7 +977,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
         final double tapPosition = details.localFocalPoint.dx;
         final double sectionWidth = maxWidth / 3;
         if (tapPosition < sectionWidth) {
-          if (Utils.isDesktop ||
+          if (PlatformUtils.isDesktop ||
               !plPlayerController.enableSlideVolumeBrightness) {
             return;
           }
@@ -1109,7 +1111,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
           final double volume = clampDouble(
             plPlayerController.volume.value - delta.dy / level,
             0.0,
-            1.0,
+            PlPlayerController.maxVolume,
           );
           plPlayerController.setVolume(volume);
         },
@@ -1176,7 +1178,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
 
   void _onTapUp(TapUpDetails details) {
     switch (details.kind) {
-      case ui.PointerDeviceKind.mouse when Utils.isDesktop:
+      case ui.PointerDeviceKind.mouse when PlatformUtils.isDesktop:
         onTapDesktop();
         break;
       default:
@@ -1212,7 +1214,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
 
   void _onDoubleTapDown(TapDownDetails details) {
     switch (details.kind) {
-      case ui.PointerDeviceKind.mouse when Utils.isDesktop:
+      case ui.PointerDeviceKind.mouse when PlatformUtils.isDesktop:
         onDoubleTapDesktop();
         break;
       default:
@@ -1238,7 +1240,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
   StreamSubscription<bool>? _danmakuListener;
 
   void _onPointerDown(PointerDownEvent event) {
-    if (Utils.isDesktop) {
+    if (PlatformUtils.isDesktop) {
       final buttons = event.buttons;
       final isSecondaryBtn = buttons == kSecondaryMouseButton;
       if (isSecondaryBtn || buttons == kMiddleMouseButton) {
@@ -1333,7 +1335,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
           final double volume = clampDouble(
             plPlayerController.volume.value - event.localPanDelta.dy / level,
             0.0,
-            1.0,
+            PlPlayerController.maxVolume,
           );
           plPlayerController.setVolume(volume);
         },
@@ -1351,7 +1353,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
       final volume = clampDouble(
         plPlayerController.volume.value + offset,
         0.0,
-        1.0,
+        PlPlayerController.maxVolume,
       );
       plPlayerController.setVolume(volume);
     }
@@ -1763,9 +1765,6 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
                               .inSeconds;
                           final int buffer =
                               plPlayerController.bufferedSeconds.value;
-                          if (value > max || max <= 0) {
-                            return const SizedBox.shrink();
-                          }
                           return ProgressBar(
                             progress: Duration(seconds: value),
                             buffered: Duration(seconds: buffer),
@@ -1821,7 +1820,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
                           ),
                         ),
                       ),
-                      if (Utils.isMobile)
+                      if (PlatformUtils.isMobile)
                         buildViewPointWidget(
                           videoDetailController,
                           plPlayerController,
@@ -1830,7 +1829,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
                         ),
                     ],
                     if (plPlayerController.showDmChart &&
-                        videoDetailController.showDmTreandChart.value)
+                        videoDetailController.showDmTrendChart.value)
                       if (videoDetailController.dmTrend.value?.dataOrNull
                           case final list?)
                         buildDmChart(primary, list, videoDetailController),
@@ -2043,7 +2042,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
           }),
       ],
     );
-    if (Utils.isDesktop) {
+    if (PlatformUtils.isDesktop) {
       return Obx(
         () => MouseRegion(
           cursor: !plPlayerController.showControls.value && isFullScreen
@@ -2127,9 +2126,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
   Future<void> screenshotWebp() async {
     final videoInfo = videoDetailController.data;
     final ids = videoInfo.dash!.video!.map((i) => i.id!).toSet();
-    final video = videoDetailController.findVideoByQa(
-      ids.reduce((p, n) => p < n ? p : n),
-    );
+    final video = videoDetailController.findVideoByQa(ids.min);
 
     VideoQuality qa = video.quality;
     String? url = video.baseUrl;
@@ -2165,7 +2162,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
                 ),
                 PopupMenuText(
                   title: '选择画质',
-                  initialValue: qa.code,
+                  value: () => qa.code,
                   onSelected: (value) {
                     final video = videoDetailController.findVideoByQa(value);
                     url = video.baseUrl;
@@ -2185,7 +2182,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
                 ),
                 PopupMenuText(
                   title: 'webp预设',
-                  initialValue: preset,
+                  value: () => preset,
                   onSelected: (value) {
                     preset = value;
                     return false;
@@ -2508,7 +2505,7 @@ Widget buildDmChart(
           minX: 0,
           maxX: (dmTrend.length - 1).toDouble(),
           minY: 0,
-          maxY: dmTrend.reduce((a, b) => a > b ? a : b).toDouble(),
+          maxY: dmTrend.max,
           lineBarsData: [
             LineChartBarData(
               spots: List.generate(
@@ -2550,7 +2547,7 @@ Widget buildSeekPreviewWidget(
 
         final double scale =
             plPlayerController.isFullScreen.value &&
-                (Utils.isDesktop || !plPlayerController.isVertical)
+                (PlatformUtils.isDesktop || !plPlayerController.isVertical)
             ? 4
             : 3;
         double height = 27 * scale;

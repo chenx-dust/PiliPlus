@@ -52,7 +52,7 @@ class _FavArticlePageState extends State<FavArticlePage>
     return switch (loadingState) {
       Loading() => gridSkeleton,
       Success(:var response) =>
-        response?.isNotEmpty == true
+        response != null && response.isNotEmpty
             ? SliverGrid.builder(
                 gridDelegate: gridDelegate,
                 itemBuilder: (context, index) {
@@ -66,11 +66,11 @@ class _FavArticlePageState extends State<FavArticlePage>
                       context: context,
                       title: '确定取消收藏？',
                       onConfirm: () =>
-                          _favArticleController.onRemove(index, item.opusId),
+                          _favArticleController.onRemove(index, item.opusId!),
                     ),
                   );
                 },
-                itemCount: response!.length,
+                itemCount: response.length,
               )
             : HttpError(onReload: _favArticleController.onReload),
       Error(:var errMsg) => HttpError(

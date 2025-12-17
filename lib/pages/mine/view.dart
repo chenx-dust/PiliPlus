@@ -15,7 +15,9 @@ import 'package:PiliPlus/pages/login/controller.dart';
 import 'package:PiliPlus/pages/main/controller.dart';
 import 'package:PiliPlus/pages/mine/controller.dart';
 import 'package:PiliPlus/pages/mine/widgets/item.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/get_ext.dart';
+import 'package:PiliPlus/utils/extension/theme_ext.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/utils.dart';
 import 'package:flutter/material.dart' hide ListTile;
 import 'package:get/get.dart';
@@ -33,7 +35,7 @@ class MinePage extends StatefulWidget {
 class _MediaPageState extends CommonPageState<MinePage, MineController>
     with AutomaticKeepAliveClientMixin {
   @override
-  MineController controller = Get.put(MineController());
+  MineController controller = Get.putOrFind(MineController.new);
   late final MainController _mainController = Get.find<MainController>();
 
   @override
@@ -224,7 +226,7 @@ class _MediaPageState extends CommonPageState<MinePage, MineController>
       fontSize: theme.textTheme.titleMedium!.fontSize,
       fontWeight: FontWeight.bold,
     );
-    final lebelStyle = theme.textTheme.labelMedium!.copyWith(
+    final labelStyle = theme.textTheme.labelMedium!.copyWith(
       color: theme.colorScheme.outline,
     );
     final coinLabelStyle = TextStyle(
@@ -252,7 +254,7 @@ class _MediaPageState extends CommonPageState<MinePage, MineController>
               Feedback.forLongPress(context);
               controller.onLogin(true);
             },
-            onSecondaryTap: Utils.isMobile
+            onSecondaryTap: PlatformUtils.isMobile
                 ? null
                 : () => controller.onLogin(true),
             child: Row(
@@ -378,21 +380,21 @@ class _MediaPageState extends CommonPageState<MinePage, MineController>
                 count: userStat.dynamicCount,
                 countStyle: style,
                 name: '动态',
-                lebelStyle: lebelStyle,
+                labelStyle: labelStyle,
                 onTap: () => controller.push('memberDynamics'),
               ),
               _btn(
                 count: userStat.following,
                 countStyle: style,
                 name: '关注',
-                lebelStyle: lebelStyle,
+                labelStyle: labelStyle,
                 onTap: () => controller.push('follow'),
               ),
               _btn(
                 count: userStat.follower,
                 countStyle: style,
                 name: '粉丝',
-                lebelStyle: lebelStyle,
+                labelStyle: labelStyle,
                 onTap: () => controller.push('fan'),
               ),
             ],
@@ -406,7 +408,7 @@ class _MediaPageState extends CommonPageState<MinePage, MineController>
     required int? count,
     required TextStyle countStyle,
     required String name,
-    required TextStyle? lebelStyle,
+    required TextStyle? labelStyle,
     required VoidCallback onTap,
   }) {
     return Flexible(
@@ -428,7 +430,7 @@ class _MediaPageState extends CommonPageState<MinePage, MineController>
                 const SizedBox(height: 4),
                 Text(
                   name,
-                  style: lebelStyle,
+                  style: labelStyle,
                 ),
               ],
             ),
@@ -465,9 +467,9 @@ class _MediaPageState extends CommonPageState<MinePage, MineController>
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  if (controller.favFoldercount != null)
+                  if (controller.favFolderCount != null)
                     TextSpan(
-                      text: "${controller.favFoldercount}  ",
+                      text: "${controller.favFolderCount}  ",
                       style: TextStyle(
                         fontSize: theme.textTheme.titleSmall!.fontSize,
                         color: secondary,
@@ -508,7 +510,7 @@ class _MediaPageState extends CommonPageState<MinePage, MineController>
           if (favFolderList == null || favFolderList.isEmpty) {
             return const SizedBox.shrink();
           }
-          bool flag = (controller.favFoldercount ?? 0) > favFolderList.length;
+          bool flag = (controller.favFolderCount ?? 0) > favFolderList.length;
           return SizedBox(
             height: 200,
             child: ListView.separated(
@@ -549,7 +551,7 @@ class _MediaPageState extends CommonPageState<MinePage, MineController>
                   return FavFolderItem(
                     heroTag: Utils.generateRandomString(8),
                     item: response.list[index],
-                    callback: () => Future.delayed(
+                    onPop: () => Future.delayed(
                       const Duration(milliseconds: 150),
                       controller.onRefresh,
                     ),

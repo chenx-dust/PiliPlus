@@ -123,7 +123,7 @@ class _MemberOpusState extends State<MemberOpus>
     maxCrossAxisExtent: Grid.smallCardWidth,
     mainAxisSpacing: StyleString.safeSpace,
     crossAxisSpacing: StyleString.safeSpace,
-    callback: (value) => _maxWidth = value,
+    afterCalc: (value) => _maxWidth = value,
   );
 
   Widget _buildBody(LoadingState<List<SpaceOpusItemModel>?> loadingState) {
@@ -136,7 +136,7 @@ class _MemberOpusState extends State<MemberOpus>
         ),
       ),
       Success(:var response) =>
-        response?.isNotEmpty == true
+        response != null && response.isNotEmpty
             ? SliverWaterfallFlow(
                 gridDelegate: gridDelegate,
                 delegate: SliverChildBuilderDelegate(
@@ -149,7 +149,7 @@ class _MemberOpusState extends State<MemberOpus>
                       maxWidth: _maxWidth,
                     );
                   },
-                  childCount: response!.length,
+                  childCount: response.length,
                 ),
               )
             : HttpError(onReload: _controller.onReload),

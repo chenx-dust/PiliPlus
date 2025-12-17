@@ -12,8 +12,6 @@ import 'package:PiliPlus/http/user.dart';
 import 'package:PiliPlus/http/video.dart';
 import 'package:PiliPlus/models/common/video/source_type.dart';
 import 'package:PiliPlus/models_new/member_card_info/data.dart';
-import 'package:PiliPlus/models_new/triple/ugc_triple.dart';
-import 'package:PiliPlus/models_new/video/video_ai_conclusion/data.dart';
 import 'package:PiliPlus/models_new/video/video_ai_conclusion/model_result.dart';
 import 'package:PiliPlus/models_new/video/video_detail/data.dart';
 import 'package:PiliPlus/models_new/video/video_detail/episode.dart';
@@ -30,12 +28,13 @@ import 'package:PiliPlus/pages/video/reply/controller.dart';
 import 'package:PiliPlus/plugin/pl_player/models/play_repeat.dart';
 import 'package:PiliPlus/services/service_locator.dart';
 import 'package:PiliPlus/utils/accounts.dart';
-import 'package:PiliPlus/utils/context_ext.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/iterable_ext.dart';
+import 'package:PiliPlus/utils/extension/string_ext.dart';
 import 'package:PiliPlus/utils/feed_back.dart';
 import 'package:PiliPlus/utils/global_data.dart';
 import 'package:PiliPlus/utils/id_utils.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/request_utils.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
 import 'package:PiliPlus/utils/utils.dart';
@@ -43,7 +42,7 @@ import 'package:expandable/expandable.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
-import 'package:get/get.dart' hide ContextExtensionss;
+import 'package:get/get.dart';
 
 class UgcIntroController extends CommonIntroController with ReloadMixin {
   late ExpandableController expandableCtr;
@@ -68,11 +67,11 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
   @override
   void onInit() {
     super.onInit();
-    bool alwaysExapndIntroPanel = Pref.alwaysExapndIntroPanel;
+    bool alwaysExpandIntroPanel = Pref.alwaysExpandIntroPanel;
     expandableCtr = ExpandableController(
-      initialExpanded: alwaysExapndIntroPanel,
+      initialExpanded: alwaysExpandIntroPanel,
     );
-    if (!alwaysExapndIntroPanel && Pref.exapndIntroPanelH) {
+    if (!alwaysExpandIntroPanel && Pref.expandIntroPanelH) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!expandableCtr.expanded && Get.context!.isLandscape) {
           expandableCtr.toggle();
@@ -133,11 +132,11 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
 
   // 获取up主粉丝数
   Future<void> queryUserStat(List<Staff>? staff) async {
-    if (staff?.isNotEmpty == true) {
+    if (staff != null && staff.isNotEmpty) {
       Request()
           .get(
             Api.relations,
-            queryParameters: {'fids': staff!.map((item) => item.mid).join(',')},
+            queryParameters: {'fids': staff.map((item) => item.mid).join(',')},
           )
           .then((res) {
             if (res.data['code'] == 0) {
@@ -190,19 +189,18 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
       return;
     }
     var result = await VideoHttp.ugcTriple(bvid: bvid);
-    if (result['status']) {
-      UgcTriple data = result['data'];
+    if (result case Success(:final response)) {
       late final stat = videoDetail.value.stat!;
-      if (data.like == true && !hasLike.value) {
+      if (response.like == true && !hasLike.value) {
         stat.like++;
         hasLike.value = true;
       }
-      if (data.coin == true && !hasCoin) {
+      if (response.coin == true && !hasCoin) {
         stat.coin += 2;
         coinNum.value = 2;
         GlobalData().afterCoin(2);
       }
-      if (data.fav == true && !hasFav.value) {
+      if (response.fav == true && !hasFav.value) {
         stat.favorite++;
         hasFav.value = true;
       }
@@ -213,7 +211,7 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
         SmartDialog.showToast('三连成功');
       }
     } else {
-      SmartDialog.showToast(result['msg']);
+      result.toast();
     }
   }
 
@@ -229,15 +227,15 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
     }
     final newVal = !hasLike.value;
     var result = await VideoHttp.likeVideo(bvid: bvid, type: newVal);
-    if (result['status']) {
-      SmartDialog.showToast(newVal ? result['data']['toast'] : '取消赞');
+    if (result case Success(:final response)) {
+      SmartDialog.showToast(newVal ? response : '取消赞');
       videoDetail.value.stat!.like += newVal ? 1 : -1;
       hasLike.value = newVal;
       if (newVal) {
         hasDislike.value = false;
       }
     } else {
-      SmartDialog.showToast(result['msg']);
+      result.toast();
     }
   }
 
@@ -250,7 +248,7 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
       bvid: bvid,
       type: !hasDislike.value,
     );
-    if (result['status']) {
+    if (result.isSuccess) {
       if (!hasDislike.value) {
         SmartDialog.showToast('点踩成功');
         hasDislike.value = true;
@@ -263,7 +261,7 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
         hasDislike.value = false;
       }
     } else {
-      SmartDialog.showToast(result['msg']);
+      result.toast();
     }
   }
 
@@ -335,7 +333,7 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
                   PageUtils.launchURL(videoUrl);
                 },
               ),
-              if (Utils.isMobile)
+              if (PlatformUtils.isMobile)
                 ListTile(
                   dense: true,
                   title: const Text(
@@ -441,7 +439,7 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
         act: 6,
         reSrc: 11,
       );
-      if (res['status']) {
+      if (res.isSuccess) {
         followStatus['attribute'] = 0;
       }
       return;
@@ -451,7 +449,7 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
         mid: mid,
         isFollow: attr != 0,
         followStatus: followStatus,
-        callback: (attribute) {
+        afterMod: (attribute) {
           followStatus['attribute'] = attribute;
           Future.delayed(const Duration(milliseconds: 500), queryFollowStatus);
         },
@@ -581,7 +579,7 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
       (e) =>
           e.cid ==
           (skipPart
-              ? videoDetail.isPageReversed == true
+              ? videoDetail.isPageReversed
                     ? videoDetail.pages!.last.cid
                     : videoDetail.pages!.first.cid
               : this.cid.value),
@@ -663,7 +661,7 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
         (e) =>
             e.cid ==
             (skipPart
-                ? videoDetail.isPageReversed == true
+                ? videoDetail.isPageReversed
                       ? videoDetail.pages!.last.cid
                       : videoDetail.pages!.first.cid
                 : this.cid.value),
@@ -762,10 +760,9 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
       upMid: mid,
     );
     SmartDialog.dismiss();
-    if (res['status']) {
-      AiConclusionData data = res['data'];
-      return data.modelResult;
-    } else if (res['handling']) {
+    if (res case Success(:final response)) {
+      return response.modelResult;
+    } else if (res is Error && res.code == 1) {
       SmartDialog.showToast("AI处理中，请稍后再试");
     } else {
       SmartDialog.showToast("当前视频暂不支持AI视频总结");

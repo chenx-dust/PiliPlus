@@ -14,7 +14,7 @@ import 'package:PiliPlus/pages/live/view.dart';
 import 'package:PiliPlus/pages/rank/view.dart';
 import 'package:PiliPlus/pages/subscription_detail/view.dart';
 import 'package:PiliPlus/pages/video/reply_reply/view.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/iterable_ext.dart';
 import 'package:PiliPlus/utils/id_utils.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
 import 'package:PiliPlus/utils/request_utils.dart';
@@ -48,7 +48,7 @@ abstract final class PiliScheme {
     Map? parameters,
     int? businessId,
     int? oid,
-  }) async {
+  }) {
     try {
       if (url.startsWith('//')) {
         url = 'https:$url';
@@ -64,7 +64,7 @@ abstract final class PiliScheme {
         oid: oid,
       );
     } catch (_) {
-      return false;
+      return Future.syncValue(false);
     }
   }
 
@@ -87,8 +87,7 @@ abstract final class PiliScheme {
       case 'bilibili':
         switch (host) {
           case 'root':
-            Navigator.popUntil(
-              Get.context!,
+            Get.key.currentState!.popUntil(
               (Route<dynamic> route) => route.isFirst,
             );
             return true;

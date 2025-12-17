@@ -5,7 +5,7 @@ import 'package:PiliPlus/grpc/bilibili/app/im/v1.pb.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/pages/whisper/widgets/item.dart';
 import 'package:PiliPlus/pages/whisper_secondary/controller.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/three_dot_ext.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -38,10 +38,10 @@ class _WhisperSecPageState extends State<WhisperSecPage> {
         actions: [
           Obx(() {
             final threeDotItems = _controller.threeDotItems.value;
-            if (threeDotItems?.isNotEmpty == true) {
+            if (threeDotItems != null && threeDotItems.isNotEmpty) {
               return PopupMenuButton(
                 itemBuilder: (context) {
-                  return threeDotItems!
+                  return threeDotItems
                       .map(
                         (e) => PopupMenuItem(
                           onTap: () => e.type.action(
@@ -95,9 +95,9 @@ class _WhisperSecPageState extends State<WhisperSecPage> {
         itemBuilder: (context, index) => const WhisperItemSkeleton(),
       ),
       Success(:var response) =>
-        response?.isNotEmpty == true
+        response != null && response.isNotEmpty
             ? SliverList.separated(
-                itemCount: response!.length,
+                itemCount: response.length,
                 itemBuilder: (context, index) {
                   if (index == response.length - 1) {
                     _controller.onLoadMore();

@@ -5,7 +5,9 @@ import 'package:PiliPlus/grpc/bilibili/app/im/v1.pb.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/pages/whisper/controller.dart';
 import 'package:PiliPlus/pages/whisper/widgets/item.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/theme_ext.dart';
+import 'package:PiliPlus/utils/extension/three_dot_ext.dart';
+import 'package:PiliPlus/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
@@ -22,17 +24,30 @@ class _WhisperPageState extends State<WhisperPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final padding = MediaQuery.viewPaddingOf(context);
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text('消息'),
         actions: [
+          IconButton(
+            tooltip: '新增粉丝',
+            onPressed: () => Get.toNamed(
+              '/webview',
+              parameters: {
+                'url':
+                    'https://www.bilibili.com/h5/follow/newFans?navhide=1&${Utils.themeUrl(theme.colorScheme.isDark)}',
+              },
+            ),
+            icon: const Icon(Icons.account_circle_outlined),
+          ),
           Obx(() {
             final outsideItem = _controller.outsideItem.value;
-            if (outsideItem?.isNotEmpty == true) {
+            if (outsideItem != null && outsideItem.isNotEmpty) {
               return Row(
-                children: outsideItem!.map((e) {
+                mainAxisSize: .min,
+                children: outsideItem.map((e) {
                   return IconButton(
                     tooltip: e.hasTitle() ? e.title : null,
                     onPressed: () => e.type.action(
@@ -49,10 +64,10 @@ class _WhisperPageState extends State<WhisperPage> {
           }),
           Obx(() {
             final threeDotItems = _controller.threeDotItems.value;
-            if (threeDotItems?.isNotEmpty == true) {
+            if (threeDotItems != null && threeDotItems.isNotEmpty) {
               return PopupMenuButton(
                 itemBuilder: (context) {
-                  return threeDotItems!
+                  return threeDotItems
                       .map(
                         (e) => PopupMenuItem(
                           onTap: () => e.type.action(
@@ -74,6 +89,7 @@ class _WhisperPageState extends State<WhisperPage> {
             }
             return const SizedBox.shrink();
           }),
+          const SizedBox(width: 5),
         ],
       ),
       body: refreshIndicator(
@@ -81,7 +97,7 @@ class _WhisperPageState extends State<WhisperPage> {
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            _buildTopItems(padding),
+            _buildTopItems(theme, padding),
             SliverPadding(
               padding: EdgeInsets.only(bottom: padding.bottom + 100),
               sliver: Obx(() => _buildBody(_controller.loadingState.value)),
@@ -105,9 +121,9 @@ class _WhisperPageState extends State<WhisperPage> {
         itemBuilder: (context, index) => const WhisperItemSkeleton(),
       ),
       Success(:var response) =>
-        response?.isNotEmpty == true
+        response != null && response.isNotEmpty
             ? SliverList.separated(
-                itemCount: response!.length,
+                itemCount: response.length,
                 itemBuilder: (context, index) {
                   if (index == response.length - 1) {
                     _controller.onLoadMore();
@@ -133,8 +149,7 @@ class _WhisperPageState extends State<WhisperPage> {
     };
   }
 
-  Widget _buildTopItems(EdgeInsets padding) {
-    final ThemeData theme = Theme.of(context);
+  Widget _buildTopItems(ThemeData theme, EdgeInsets padding) {
     return SliverPadding(
       padding: EdgeInsets.only(left: padding.left, right: padding.right),
       sliver: SliverToBoxAdapter(

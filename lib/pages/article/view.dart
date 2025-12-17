@@ -15,7 +15,7 @@ import 'package:PiliPlus/pages/article/widgets/opus_content.dart';
 import 'package:PiliPlus/pages/common/dyn/common_dyn_page.dart';
 import 'package:PiliPlus/pages/dynamics_repost/view.dart';
 import 'package:PiliPlus/utils/date_utils.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/get_ext.dart';
 import 'package:PiliPlus/utils/grid.dart';
 import 'package:PiliPlus/utils/image_utils.dart';
 import 'package:PiliPlus/utils/num_utils.dart';
@@ -511,14 +511,14 @@ class _ArticlePageState extends CommonDynPageState<ArticlePage> {
             required String text,
             required DynamicStat? stat,
             required VoidCallback onPressed,
-            IconData? activitedIcon,
+            IconData? activatedIcon,
           }) {
             final status = stat?.status == true;
             final color = status ? primary : outline;
             return TextButton.icon(
               onPressed: onPressed,
               icon: Icon(
-                status ? activitedIcon : icon,
+                status ? activatedIcon : icon,
                 size: 16,
                 color: color,
               ),
@@ -597,7 +597,7 @@ class _ArticlePageState extends CommonDynPageState<ArticlePage> {
                                     pic: summary.cover,
                                     title: summary.title,
                                     uname: summary.author?.name,
-                                    callback: () {
+                                    onSuccess: () {
                                       if (forward != null) {
                                         int count = forward.count ?? 0;
                                         forward.count = count + 1;
@@ -625,7 +625,7 @@ class _ArticlePageState extends CommonDynPageState<ArticlePage> {
                       Expanded(
                         child: textIconButton(
                           icon: FontAwesomeIcons.star,
-                          activitedIcon: FontAwesomeIcons.solidStar,
+                          activatedIcon: FontAwesomeIcons.solidStar,
                           text: '收藏',
                           stat: stats.favorite,
                           onPressed: controller.onFav,
@@ -634,7 +634,7 @@ class _ArticlePageState extends CommonDynPageState<ArticlePage> {
                       Expanded(
                         child: textIconButton(
                           icon: FontAwesomeIcons.thumbsUp,
-                          activitedIcon: FontAwesomeIcons.solidThumbsUp,
+                          activatedIcon: FontAwesomeIcons.solidThumbsUp,
                           text: '点赞',
                           stat: stats.like,
                           onPressed: controller.onLike,

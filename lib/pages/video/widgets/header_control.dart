@@ -23,7 +23,7 @@ import 'package:PiliPlus/models/common/video/video_quality.dart';
 import 'package:PiliPlus/models/video/play/url.dart';
 import 'package:PiliPlus/models_new/video/video_play_info/subtitle.dart';
 import 'package:PiliPlus/pages/common/common_intro_controller.dart';
-import 'package:PiliPlus/pages/danmaku/dnamaku_model.dart';
+import 'package:PiliPlus/pages/danmaku/danmaku_model.dart';
 import 'package:PiliPlus/pages/setting/widgets/select_dialog.dart';
 import 'package:PiliPlus/pages/setting/widgets/switch_item.dart';
 import 'package:PiliPlus/pages/video/controller.dart';
@@ -38,9 +38,10 @@ import 'package:PiliPlus/plugin/pl_player/utils/fullscreen.dart';
 import 'package:PiliPlus/services/service_locator.dart';
 import 'package:PiliPlus/utils/accounts.dart';
 import 'package:PiliPlus/utils/accounts/account.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/string_ext.dart';
 import 'package:PiliPlus/utils/image_utils.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/storage_key.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
@@ -1157,7 +1158,7 @@ class HeaderControlState extends State<HeaderControl>
                     ),
                     onTap: () async {
                       Get.back();
-                      CDNService? result = await showDialog(
+                      final result = await showDialog<CDNService>(
                         context: context,
                         builder: (context) {
                           return CdnSelectDialog(
@@ -1436,6 +1437,7 @@ class HeaderControlState extends State<HeaderControl>
       context: context,
       builder: (context) {
         final state = player.state;
+        final colorScheme = ColorScheme.of(context);
         return AlertDialog(
           title: const Text('播放信息'),
           contentPadding: const EdgeInsets.only(top: 16),
@@ -1562,7 +1564,7 @@ class HeaderControlState extends State<HeaderControl>
               onPressed: Get.back,
               child: Text(
                 '确定',
-                style: TextStyle(color: Get.theme.colorScheme.outline),
+                style: TextStyle(color: colorScheme.outline),
               ),
             ),
           ],
@@ -1586,14 +1588,14 @@ class HeaderControlState extends State<HeaderControl>
     final int totalQaSam = videoFormat.length;
 
     /// 可用的质量分类
-    int userfulQaSam = 0;
+    int usefulQaSam = 0;
     final List<VideoItem> video = videoInfo.dash!.video!;
     final Set<int> idSet = {};
     for (final VideoItem item in video) {
       final int id = item.id!;
       if (!idSet.contains(id)) {
         idSet.add(id);
-        userfulQaSam++;
+        usefulQaSam++;
       }
     }
 
@@ -1662,7 +1664,7 @@ class HeaderControlState extends State<HeaderControl>
                         }
                       },
                       // 可能包含会员解锁画质
-                      enabled: index >= totalQaSam - userfulQaSam,
+                      enabled: index >= totalQaSam - usefulQaSam,
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 20,
                       ),
@@ -1920,7 +1922,7 @@ class HeaderControlState extends State<HeaderControl>
     double subtitleFontScaleFS = plPlayerController.subtitleFontScaleFS;
     int subtitlePaddingH = plPlayerController.subtitlePaddingH;
     int subtitlePaddingB = plPlayerController.subtitlePaddingB;
-    double subtitleBgOpaticy = plPlayerController.subtitleBgOpaticy;
+    double subtitleBgOpacity = plPlayerController.subtitleBgOpacity;
     double subtitleStrokeWidth = plPlayerController.subtitleStrokeWidth;
     int subtitleFontWeight = plPlayerController.subtitleFontWeight;
 
@@ -1947,9 +1949,9 @@ class HeaderControlState extends State<HeaderControl>
         }
 
         void updateOpacity(double val) {
-          subtitleBgOpaticy = val.toPrecision(2);
+          subtitleBgOpacity = val.toPrecision(2);
           plPlayerController
-            ..subtitleBgOpaticy = subtitleBgOpaticy
+            ..subtitleBgOpacity = subtitleBgOpacity
             ..updateSubtitleStyle();
           setState(() {});
         }
@@ -2217,7 +2219,7 @@ class HeaderControlState extends State<HeaderControl>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('背景不透明度 ${(subtitleBgOpaticy * 100).toInt()}%'),
+                      Text('背景不透明度 ${(subtitleBgOpacity * 100).toInt()}%'),
                       resetBtn(
                         theme,
                         '67%',
@@ -2238,7 +2240,7 @@ class HeaderControlState extends State<HeaderControl>
                       child: Slider(
                         min: 0,
                         max: 1,
-                        value: subtitleBgOpaticy,
+                        value: subtitleBgOpacity,
                         onChanged: updateOpacity,
                         onChangeEnd: (_) =>
                             plPlayerController.putSubtitleSettings(),
@@ -2535,7 +2537,7 @@ class HeaderControlState extends State<HeaderControl>
                       plPlayerController.exitDesktopPip();
                     } else if (isFullScreen) {
                       plPlayerController.triggerFullScreen(status: false);
-                    } else if (Utils.isMobile &&
+                    } else if (PlatformUtils.isMobile &&
                         !horizontalScreen &&
                         !isPortrait) {
                       verticalScreenForTwoSeconds();
@@ -2568,6 +2570,33 @@ class HeaderControlState extends State<HeaderControl>
               title,
               // show current datetime
               ...?timeBatteryWidgets,
+              if (PlatformUtils.isDesktop && !plPlayerController.isDesktopPip)
+                Obx(() {
+                  final isAlwaysOnTop = plPlayerController.isAlwaysOnTop.value;
+                  return SizedBox(
+                    width: 42,
+                    height: 34,
+                    child: IconButton(
+                      tooltip: '${isAlwaysOnTop ? '取消' : ''}置顶',
+                      style: const ButtonStyle(
+                        padding: WidgetStatePropertyAll(EdgeInsets.zero),
+                      ),
+                      onPressed: () =>
+                          plPlayerController.setAlwaysOnTop(!isAlwaysOnTop),
+                      icon: isAlwaysOnTop
+                          ? const Icon(
+                              size: 19,
+                              Icons.push_pin,
+                              color: Colors.white,
+                            )
+                          : const Icon(
+                              size: 19,
+                              Icons.push_pin_outlined,
+                              color: Colors.white,
+                            ),
+                    ),
+                  );
+                }),
               if (!isFileSource) ...[
                 if (!isFSOrPip) ...[
                   if (videoDetailCtr.isUgc)
@@ -2654,7 +2683,7 @@ class HeaderControlState extends State<HeaderControl>
                       : const SizedBox.shrink(),
                 ),
               ],
-              if (isFSOrPip || Utils.isDesktop) ...[
+              if (isFullScreen || PlatformUtils.isDesktop) ...[
                 SizedBox(
                   width: 42,
                   height: 34,
@@ -2709,7 +2738,8 @@ class HeaderControlState extends State<HeaderControl>
                   ),
                 ),
               ],
-              if (Platform.isAndroid || (Utils.isDesktop && !isFullScreen))
+              if (Platform.isAndroid ||
+                  (PlatformUtils.isDesktop && !isFullScreen))
                 SizedBox(
                   width: 42,
                   height: 34,
@@ -2719,7 +2749,7 @@ class HeaderControlState extends State<HeaderControl>
                       padding: WidgetStatePropertyAll(EdgeInsets.zero),
                     ),
                     onPressed: () async {
-                      if (Utils.isDesktop) {
+                      if (PlatformUtils.isDesktop) {
                         plPlayerController.toggleDesktopPip();
                         return;
                       }

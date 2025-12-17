@@ -3,15 +3,14 @@ import 'dart:math' show max;
 
 import 'package:PiliPlus/http/constants.dart';
 import 'package:PiliPlus/http/fav.dart';
+import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/http/pgc.dart';
 import 'package:PiliPlus/http/search.dart';
 import 'package:PiliPlus/http/video.dart';
 import 'package:PiliPlus/models/common/video/source_type.dart';
 import 'package:PiliPlus/models/common/video/video_type.dart';
-import 'package:PiliPlus/models/pgc_lcf.dart';
 import 'package:PiliPlus/models_new/pgc/pgc_info_model/episode.dart';
 import 'package:PiliPlus/models_new/pgc/pgc_info_model/result.dart';
-import 'package:PiliPlus/models_new/triple/pgc_triple.dart';
 import 'package:PiliPlus/models_new/video/video_detail/episode.dart'
     hide EpisodeItem;
 import 'package:PiliPlus/models_new/video/video_detail/stat_detail.dart';
@@ -25,6 +24,7 @@ import 'package:PiliPlus/utils/feed_back.dart';
 import 'package:PiliPlus/utils/global_data.dart';
 import 'package:PiliPlus/utils/id_utils.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/utils.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
@@ -75,11 +75,10 @@ class PgcIntroController extends CommonIntroController {
 
   // 获取点赞/投币/收藏状态
   Future<void> queryPgcLikeCoinFav() async {
-    var result = await VideoHttp.pgcLikeCoinFav(epId: epId);
-    if (result['status']) {
-      PgcLCF data = result['data'];
-      final hasLike = data.like == 1;
-      final hasFav = data.favorite == 1;
+    var result = await VideoHttp.pgcLikeCoinFav(epId: epId!);
+    if (result case Success(:final response)) {
+      final hasLike = response.like == 1;
+      final hasFav = response.favorite == 1;
       late final stat = pgcItem.stat!;
       if (hasLike) {
         stat.like = max(1, stat.like);
@@ -88,10 +87,10 @@ class PgcIntroController extends CommonIntroController {
         stat.favorite = max(1, stat.favorite);
       }
       this.hasLike.value = hasLike;
-      coinNum.value = data.coinNumber!;
+      coinNum.value = response.coinNumber!;
       this.hasFav.value = hasFav;
     } else {
-      SmartDialog.showToast(result['msg']);
+      result.toast();
     }
   }
 
@@ -104,12 +103,12 @@ class PgcIntroController extends CommonIntroController {
     }
     final newVal = !hasLike.value;
     var result = await VideoHttp.likeVideo(bvid: bvid, type: newVal);
-    if (result['status']) {
-      SmartDialog.showToast(newVal ? result['data']['toast'] : '取消赞');
+    if (result case Success(:final response)) {
+      SmartDialog.showToast(newVal ? response : '取消赞');
       pgcItem.stat!.like += newVal ? 1 : -1;
       hasLike.value = newVal;
     } else {
-      SmartDialog.showToast(result['msg']);
+      result.toast();
     }
   }
 
@@ -172,7 +171,7 @@ class PgcIntroController extends CommonIntroController {
                   PageUtils.launchURL(videoUrl);
                 },
               ),
-              if (Utils.isMobile)
+              if (PlatformUtils.isMobile)
                 ListTile(
                   dense: true,
                   title: const Text(
@@ -331,20 +330,24 @@ class PgcIntroController extends CommonIntroController {
   // 追番
   Future<void> pgcAdd() async {
     var result = await VideoHttp.pgcAdd(seasonId: pgcItem.seasonId);
-    if (result['status']) {
+    if (result case Success(:final response)) {
       isFollowed.value = true;
       followStatus.value = 2;
+      SmartDialog.showToast(response);
+    } else {
+      result.toast();
     }
-    SmartDialog.showToast(result['msg']);
   }
 
   // 取消追番
   Future<void> pgcDel() async {
     var result = await VideoHttp.pgcDel(seasonId: pgcItem.seasonId);
-    if (result['status']) {
+    if (result case Success(:final response)) {
       isFollowed.value = false;
+      SmartDialog.showToast(response);
+    } else {
+      result.toast();
     }
-    SmartDialog.showToast(result['msg']);
   }
 
   Future<void> pgcUpdate(int status) async {
@@ -352,10 +355,12 @@ class PgcIntroController extends CommonIntroController {
       seasonId: pgcItem.seasonId.toString(),
       status: status,
     );
-    if (result['status']) {
+    if (result case Success(:final response)) {
       followStatus.value = status;
+      SmartDialog.showToast(response);
+    } else {
+      result.toast();
     }
-    SmartDialog.showToast(result['msg']);
   }
 
   @override
@@ -419,20 +424,19 @@ class PgcIntroController extends CommonIntroController {
       SmartDialog.showToast('已三连');
       return;
     }
-    var result = await VideoHttp.pgcTriple(epId: epId, seasonId: seasonId);
-    if (result['status']) {
-      PgcTriple data = result['data'];
+    var result = await VideoHttp.pgcTriple(epId: epId!, seasonId: seasonId);
+    if (result case Success(:final response)) {
       late final stat = pgcItem.stat!;
-      if (data.like == 1 && !hasLike.value) {
+      if (response.like == 1 && !hasLike.value) {
         stat.like++;
         hasLike.value = true;
       }
-      if (data.coin == 1 && !hasCoin) {
+      if (response.coin == 1 && !hasCoin) {
         stat.coin += 2;
         coinNum.value = 2;
         GlobalData().afterCoin(2);
       }
-      if (data.favorite == 1 && !hasFav.value) {
+      if (response.favorite == 1 && !hasFav.value) {
         stat.favorite++;
         hasFav.value = true;
       }
@@ -442,7 +446,7 @@ class PgcIntroController extends CommonIntroController {
         SmartDialog.showToast('三连成功');
       }
     } else {
-      SmartDialog.showToast(result['msg']);
+      result.toast();
     }
   }
 
@@ -472,9 +476,9 @@ class PgcIntroController extends CommonIntroController {
     //   }
     // });
 
-    final res = await PgcHttp.seasonStatus(seasonId);
+    final res = await PgcHttp.seasonStatus(seasonId!);
     if (res['status']) {
-      final data = res['data'];
+      final Map<String, dynamic> data = res['data'];
       isFollowed.value = data['follow'] == 1;
       followStatus.value = data['follow_status'];
     }
@@ -496,13 +500,13 @@ class PgcIntroController extends CommonIntroController {
 
   Future<void> onFavPugv(bool isFav) async {
     final res = isFav
-        ? await FavHttp.delFavPugv(seasonId)
-        : await FavHttp.addFavPugv(seasonId);
-    if (res['status']) {
+        ? await FavHttp.delFavPugv(seasonId!)
+        : await FavHttp.addFavPugv(seasonId!);
+    if (res.isSuccess) {
       this.isFav.value = !isFav;
       SmartDialog.showToast('${isFav ? '取消' : ''}收藏成功');
     } else {
-      SmartDialog.showToast(res['msg']);
+      res.toast();
     }
   }
 }

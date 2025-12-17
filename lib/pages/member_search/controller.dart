@@ -1,6 +1,6 @@
 import 'package:PiliPlus/models/common/member/search_type.dart';
 import 'package:PiliPlus/pages/member_search/child/controller.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/scroll_controller_ext.dart';
 import 'package:PiliPlus/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -11,7 +11,7 @@ class MemberSearchController extends GetxController
   final editingController = TextEditingController();
   final focusNode = FocusNode();
 
-  final mid = Get.parameters['mid'];
+  final mid = Get.parameters['mid']!;
   final uname = Get.parameters['uname'];
 
   final RxBool hasData = false.obs;

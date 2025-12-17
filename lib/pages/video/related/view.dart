@@ -3,7 +3,7 @@ import 'package:PiliPlus/common/widgets/video_card/video_card_h.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models/model_hot_video_item.dart';
 import 'package:PiliPlus/pages/video/related/controller.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/get_ext.dart';
 import 'package:PiliPlus/utils/grid.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -33,7 +33,7 @@ class _RelatedVideoPanelState extends State<RelatedVideoPanel> with GridMixin {
     return switch (loadingState) {
       Loading() => gridSkeleton,
       Success(:var response) =>
-        response?.isNotEmpty == true
+        response != null && response.isNotEmpty
             ? SliverGrid.builder(
                 gridDelegate: gridDelegate,
                 itemBuilder: (context, index) {
@@ -44,7 +44,7 @@ class _RelatedVideoPanelState extends State<RelatedVideoPanel> with GridMixin {
                       ..refresh(),
                   );
                 },
-                itemCount: response!.length,
+                itemCount: response.length,
               )
             : const SliverToBoxAdapter(),
       Error(:var errMsg) => HttpError(

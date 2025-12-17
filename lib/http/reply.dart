@@ -10,13 +10,13 @@ import 'package:PiliPlus/utils/accounts.dart';
 import 'package:PiliPlus/utils/accounts/account.dart';
 import 'package:dio/dio.dart';
 
-class ReplyHttp {
+abstract final class ReplyHttp {
   static final Options options = Options(
     headers: {...Constants.baseHeaders, 'cookie': ''},
     extra: {'account': const NoAccount()},
   );
 
-  static Future<LoadingState> replyList({
+  static Future<LoadingState<ReplyData>> replyList({
     required bool isLogin,
     required int oid,
     required String nextOffset,
@@ -48,8 +48,7 @@ class ReplyHttp {
             options: !isLogin ? options : null,
           );
     if (res.data['code'] == 0) {
-      ReplyData replyData = ReplyData.fromJson(res.data['data']);
-      return Success(replyData);
+      return Success(ReplyData.fromJson(res.data['data']));
     } else {
       return Error(res.data['message']);
     }
@@ -87,7 +86,7 @@ class ReplyHttp {
     }
   }
 
-  static Future hateReply({
+  static Future<LoadingState<Null>> hateReply({
     required int type,
     required int action,
     required int oid,
@@ -105,14 +104,14 @@ class ReplyHttp {
       options: Options(contentType: Headers.formUrlEncodedContentType),
     );
     if (res.data['code'] == 0) {
-      return {'status': true, 'data': res.data['data']};
+      return const Success(null);
     } else {
-      return {'status': false, 'msg': res.data['message']};
+      return Error(res.data['message']);
     }
   }
 
   // 评论点赞
-  static Future likeReply({
+  static Future<LoadingState<Null>> likeReply({
     required int type,
     required int oid,
     required int rpid,
@@ -130,9 +129,9 @@ class ReplyHttp {
       options: Options(contentType: Headers.formUrlEncodedContentType),
     );
     if (res.data['code'] == 0) {
-      return {'status': true, 'data': res.data['data']};
+      return const Success(null);
     } else {
-      return {'status': false, 'msg': res.data['message']};
+      return Error(res.data['message']);
     }
   }
 
@@ -153,10 +152,10 @@ class ReplyHttp {
     }
   }
 
-  static Future replyTop({
-    required oid,
-    required type,
-    required rpid,
+  static Future<LoadingState<Null>> replyTop({
+    required Object oid,
+    required Object type,
+    required Object rpid,
     required bool isUpTop,
   }) async {
     var res = await Request().post(
@@ -171,9 +170,40 @@ class ReplyHttp {
       options: Options(contentType: Headers.formUrlEncodedContentType),
     );
     if (res.data['code'] == 0) {
-      return {'status': true};
+      return const Success(null);
     } else {
-      return {'status': false, 'msg': res.data['message']};
+      return Error(res.data['message']);
+    }
+  }
+
+  static Future<LoadingState<Null>> report({
+    required Object rpid,
+    required Object oid,
+    required int reasonType,
+    bool banUid = true,
+    String? reasonDesc,
+  }) async {
+    final res = await Request().post(
+      '/x/v2/reply/report',
+      data: {
+        'add_blacklist': banUid,
+        'csrf': Accounts.main.csrf,
+        'gaia_source': 'main_h5',
+        'oid': oid,
+        'platform': 'android',
+        'reason': reasonType,
+        'rpid': rpid,
+        'scene': 'main',
+        'type': 1,
+        if (reasonType == 0) 'content': reasonDesc!,
+      },
+      options: Options(contentType: Headers.formUrlEncodedContentType),
+    );
+
+    if (res.data['code'] == 0) {
+      return const Success(null);
+    } else {
+      return Error(res.data['message']);
     }
   }
 }

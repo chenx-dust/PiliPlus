@@ -11,7 +11,7 @@ import 'package:PiliPlus/models_new/space/space_archive/item.dart';
 import 'package:PiliPlus/utils/date_utils.dart';
 import 'package:PiliPlus/utils/duration_utils.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
-import 'package:PiliPlus/utils/utils.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 
@@ -44,10 +44,10 @@ class VideoCardHMemberVideo extends StatelessWidget {
         children: [
           InkWell(
             onLongPress: onLongPress,
-            onSecondaryTap: Utils.isMobile ? null : onLongPress,
+            onSecondaryTap: PlatformUtils.isMobile ? null : onLongPress,
             onTap:
                 onTap ??
-                () async {
+                () {
                   final isPgc = videoItem.isPgc == true;
                   final isPugv = videoItem.isPugv == true;
                   if ((isPgc || isPugv) && videoItem.uri?.isNotEmpty == true) {

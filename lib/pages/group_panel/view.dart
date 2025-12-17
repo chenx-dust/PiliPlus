@@ -2,7 +2,8 @@ import 'package:PiliPlus/common/widgets/loading_widget/loading_widget.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/http/member.dart';
 import 'package:PiliPlus/models/member/tags.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/iterable_ext.dart';
+import 'package:PiliPlus/utils/extension/num_ext.dart';
 import 'package:PiliPlus/utils/feed_back.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
@@ -57,9 +58,11 @@ class _GroupPanelState extends State<GroupPanel> {
       widget.mid.toString(),
       tags.isEmpty ? '0' : tags.join(','),
     );
-    SmartDialog.showToast(res['msg']);
-    if (res['status']) {
+    if (res.isSuccess) {
+      SmartDialog.showToast('操作成功');
       Get.back(result: tags);
+    } else {
+      res.toast();
     }
   }
 

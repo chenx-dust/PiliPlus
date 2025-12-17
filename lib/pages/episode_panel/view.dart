@@ -25,8 +25,9 @@ import 'package:PiliPlus/pages/video/introduction/ugc/widgets/page.dart';
 import 'package:PiliPlus/utils/accounts.dart';
 import 'package:PiliPlus/utils/date_utils.dart';
 import 'package:PiliPlus/utils/duration_utils.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/scroll_controller_ext.dart';
 import 'package:PiliPlus/utils/id_utils.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
 import 'package:PiliPlus/utils/utils.dart';
 import 'package:flutter/foundation.dart';
@@ -195,7 +196,7 @@ class _EpisodePanelState extends State<EpisodePanel>
   Widget buildPage(ThemeData theme) {
     final isMulti = widget.type == EpisodeType.season && widget.list.length > 1;
 
-    Widget tabbar() => TabBar(
+    Widget tabBar() => TabBar(
       controller: _tabController,
       padding: const EdgeInsets.only(right: 60),
       isScrollable: true,
@@ -213,7 +214,7 @@ class _EpisodePanelState extends State<EpisodePanel>
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildToolbar(theme),
-            tabbar(),
+            tabBar(),
           ],
         ),
         children: List.generate(
@@ -234,7 +235,7 @@ class _EpisodePanelState extends State<EpisodePanel>
         children: [
           _buildToolbar(theme),
           if (isMulti) ...[
-            tabbar(),
+            tabBar(),
             Expanded(
               child: tabBarView(
                 controller: _tabController,
@@ -457,7 +458,7 @@ class _EpisodePanelState extends State<EpisodePanel>
               });
             },
             onLongPress: onLongPress,
-            onSecondaryTap: Utils.isMobile ? null : onLongPress,
+            onSecondaryTap: PlatformUtils.isMobile ? null : onLongPress,
             child: Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: StyleString.safeSpace,
@@ -584,11 +585,11 @@ class _EpisodePanelState extends State<EpisodePanel>
             isFav: response,
             seasonId: widget.seasonId,
           );
-          if (result['status']) {
+          if (result.isSuccess) {
             SmartDialog.showToast('${response ? '取消' : ''}订阅成功');
             _favState!.value = Success(!response);
           } else {
-            SmartDialog.showToast(result['msg']);
+            result.toast();
           }
         },
       ),

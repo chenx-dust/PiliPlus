@@ -26,10 +26,12 @@ import 'package:PiliPlus/plugin/pl_player/models/play_repeat.dart';
 import 'package:PiliPlus/plugin/pl_player/models/play_status.dart';
 import 'package:PiliPlus/services/service_locator.dart';
 import 'package:PiliPlus/utils/accounts.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/iterable_ext.dart';
+import 'package:PiliPlus/utils/extension/num_ext.dart';
 import 'package:PiliPlus/utils/global_data.dart';
 import 'package:PiliPlus/utils/id_utils.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
 import 'package:PiliPlus/utils/utils.dart';
 import 'package:PiliPlus/utils/video_utils.dart';
@@ -298,13 +300,13 @@ class AudioController extends GetxController
             case PlayRepeat.pause:
               break;
             case PlayRepeat.listOrder:
-              playNext();
+              playNext(nextPart: true);
               break;
             case PlayRepeat.singleCycle:
               _replay();
               break;
             case PlayRepeat.listCycle:
-              if (!playNext()) {
+              if (!playNext(nextPart: true)) {
                 if (index != null && index != 0 && playlist != null) {
                   playIndex(0);
                 } else {
@@ -507,7 +509,7 @@ class AudioController extends GetxController
                   PageUtils.launchURL(audioUrl);
                 },
               ),
-              if (Utils.isMobile)
+              if (PlatformUtils.isMobile)
                 ListTile(
                   dense: true,
                   title: const Text(
@@ -606,7 +608,27 @@ class AudioController extends GetxController
     return false;
   }
 
-  bool playNext() {
+  bool playNext({bool nextPart = false}) {
+    if (nextPart) {
+      if (audioItem.value case final audioItem?) {
+        final parts = audioItem.parts;
+        if (parts.length > 1) {
+          final subId = this.subId.firstOrNull;
+          final nextIndex = parts.indexWhere((e) => e.subId == subId) + 1;
+          if (nextIndex != 0 && nextIndex < parts.length) {
+            final nextPart = parts[nextIndex];
+            oid = nextPart.oid;
+            this.subId = [nextPart.subId];
+            _queryPlayUrl().then((res) {
+              if (res) {
+                _videoDetailController = null;
+              }
+            });
+            return true;
+          }
+        }
+      }
+    }
     if (index != null && playlist != null && player != null) {
       final next = index! + 1;
       if (next < playlist!.length) {

@@ -10,7 +10,7 @@ import 'package:PiliPlus/models_new/dynamic/dyn_topic_pub_search/data.dart';
 import 'package:PiliPlus/models_new/pgc/pgc_info_model/result.dart';
 import 'package:PiliPlus/models_new/search/search_rcmd/data.dart';
 import 'package:PiliPlus/models_new/search/search_trending/data.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/iterable_ext.dart';
 import 'package:PiliPlus/utils/request_utils.dart';
 import 'package:PiliPlus/utils/wbi_sign.dart';
 import 'package:dio/dio.dart';
@@ -19,7 +19,9 @@ import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 
 class SearchHttp {
   // 获取搜索建议
-  static Future searchSuggest({required String term}) async {
+  static Future<LoadingState<SearchSuggestModel>> searchSuggest({
+    required String term,
+  }) async {
     var res = await Request().get(
       Api.searchSuggest,
       queryParameters: {
@@ -32,14 +34,11 @@ class SearchHttp {
       Map<String, dynamic> resultMap = json.decode(res.data);
       if (resultMap['code'] == 0) {
         if (resultMap['result'] is Map) {
-          return {
-            'status': true,
-            'data': SearchSuggestModel.fromJson(resultMap['result']),
-          };
+          return Success(SearchSuggestModel.fromJson(resultMap['result']));
         }
       }
     }
-    return {'status': false, 'msg': '请求错误'};
+    return const Error(null);
   }
 
   // 分类搜索
@@ -63,7 +62,7 @@ class SearchHttp {
       'search_type': searchType.name,
       'keyword': keyword,
       'page': page,
-      if (order?.isNotEmpty == true) 'order': order,
+      if (order != null && order.isNotEmpty) 'order': order,
       'duration': ?duration,
       'tids': ?tids,
       'order_sort': ?orderSort,
@@ -146,7 +145,7 @@ class SearchHttp {
     var params = await WbiSign.makSign({
       'keyword': keyword,
       'page': page,
-      if (order?.isNotEmpty == true) 'order': order,
+      if (order != null && order.isNotEmpty) 'order': order,
       'duration': ?duration,
       'tids': ?tids,
       'order_sort': ?orderSort,

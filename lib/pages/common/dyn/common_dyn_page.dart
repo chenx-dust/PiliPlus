@@ -10,7 +10,7 @@ import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/pages/common/dyn/common_dyn_controller.dart';
 import 'package:PiliPlus/pages/video/reply/widgets/reply_item_grpc.dart';
 import 'package:PiliPlus/pages/video/reply_reply/view.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/size_ext.dart';
 import 'package:PiliPlus/utils/feed_back.dart';
 import 'package:PiliPlus/utils/num_utils.dart';
 import 'package:PiliPlus/utils/storage.dart';
@@ -149,9 +149,9 @@ abstract class CommonDynPageState<T extends StatefulWidget> extends State<T>
         itemBuilder: (context, index) => const VideoReplySkeleton(),
       ),
       Success(:var response) =>
-        response?.isNotEmpty == true
+        response != null && response.isNotEmpty
             ? SliverList.builder(
-                itemCount: response!.length + 1,
+                itemCount: response.length + 1,
                 itemBuilder: (context, index) {
                   if (index == response.length) {
                     controller.onLoadMore();

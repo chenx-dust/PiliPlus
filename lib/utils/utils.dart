@@ -4,10 +4,11 @@ import 'dart:io';
 import 'dart:math' show Random;
 
 import 'package:PiliPlus/common/constants.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
+import 'package:catcher_2/catcher_2.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
@@ -18,14 +19,10 @@ abstract class Utils {
 
   static const channel = MethodChannel(Constants.appName);
 
-  @pragma("vm:platform-const")
-  static final bool isMobile = Platform.isAndroid || Platform.isIOS;
-
-  @pragma("vm:platform-const")
-  static final bool isDesktop =
-      Platform.isWindows || Platform.isMacOS || Platform.isLinux;
-
   static const jsonEncoder = JsonEncoder.withIndent('    ');
+
+  static String themeUrl(bool isDark) =>
+      'native.theme=${isDark ? 2 : 1}&night=${isDark ? 1 : 0}';
 
   static Future<void> saveBytes2File({
     required String name,
@@ -38,13 +35,13 @@ abstract class Utils {
         allowedExtensions: allowedExtensions,
         type: type,
         fileName: name,
-        bytes: Utils.isDesktop ? null : bytes,
+        bytes: PlatformUtils.isDesktop ? null : bytes,
       );
       if (path == null) {
         SmartDialog.showToast("取消保存");
         return;
       }
-      if (Utils.isDesktop) {
+      if (PlatformUtils.isDesktop) {
         await File(path).writeAsBytes(bytes);
       }
       SmartDialog.showToast("已保存");
@@ -62,7 +59,7 @@ abstract class Utils {
 
   static Future<bool> get isWiFi async {
     try {
-      return Utils.isMobile &&
+      return PlatformUtils.isMobile &&
           (await Connectivity().checkConnectivity()).contains(
             ConnectivityResult.wifi,
           );
@@ -96,7 +93,7 @@ abstract class Utils {
   }
 
   static Future<void> shareText(String text) async {
-    if (Utils.isDesktop) {
+    if (PlatformUtils.isDesktop) {
       copyText(text);
       return;
     }
@@ -163,19 +160,7 @@ abstract class Utils {
   /// containing the `catch` block with
   /// `@pragma('vm:notify-debugger-on-exception')` to allow an attached debugger
   /// to treat the exception as unhandled.
-  static void reportError(
-    Object exception, [
-    StackTrace? stack,
-    String? library = Constants.appName,
-    bool silent = false,
-  ]) {
-    FlutterError.reportError(
-      FlutterErrorDetails(
-        exception: exception,
-        stack: stack,
-        library: library,
-        silent: silent,
-      ),
-    );
+  static void reportError(Object exception, [StackTrace? stack]) {
+    Catcher2.reportCheckedError(exception, stack);
   }
 }

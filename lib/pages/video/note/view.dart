@@ -9,7 +9,7 @@ import 'package:PiliPlus/pages/common/slide/common_slide_page.dart';
 import 'package:PiliPlus/pages/video/note/controller.dart';
 import 'package:PiliPlus/pages/webview/view.dart';
 import 'package:PiliPlus/utils/accounts.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/theme_ext.dart';
 import 'package:extended_nested_scroll_view/extended_nested_scroll_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
@@ -187,7 +187,7 @@ class _NoteListPageState extends State<NoteListPage>
         itemCount: 8,
       ),
       Success(:var response) =>
-        response?.isNotEmpty == true
+        response != null && response.isNotEmpty
             ? SliverList.separated(
                 itemBuilder: (context, index) {
                   if (index == response.length - 1) {
@@ -195,7 +195,7 @@ class _NoteListPageState extends State<NoteListPage>
                   }
                   return _itemWidget(theme, response[index]);
                 },
-                itemCount: response!.length,
+                itemCount: response.length,
                 separatorBuilder: (context, index) => divider,
               )
             : HttpError(onReload: _controller.onReload),

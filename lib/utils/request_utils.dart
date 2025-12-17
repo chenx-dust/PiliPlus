@@ -11,7 +11,6 @@ import 'package:PiliPlus/http/dynamics.dart';
 import 'package:PiliPlus/http/fav.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/http/member.dart';
-import 'package:PiliPlus/http/msg.dart';
 import 'package:PiliPlus/http/user.dart';
 import 'package:PiliPlus/http/validate.dart';
 import 'package:PiliPlus/http/video.dart';
@@ -24,9 +23,10 @@ import 'package:PiliPlus/pages/group_panel/view.dart';
 import 'package:PiliPlus/pages/later/controller.dart';
 import 'package:PiliPlus/pages/login/geetest/geetest_webview_dialog.dart';
 import 'package:PiliPlus/utils/accounts.dart';
-import 'package:PiliPlus/utils/context_ext.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/context_ext.dart';
+import 'package:PiliPlus/utils/extension/string_ext.dart';
 import 'package:PiliPlus/utils/feed_back.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/storage_key.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
@@ -37,15 +37,15 @@ import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart' hide ContextExtensionss;
 import 'package:gt3_flutter_plugin/gt3_flutter_plugin.dart';
 
-abstract class RequestUtils {
+abstract final class RequestUtils {
   static Future<void> syncHistoryStatus() async {
     final account = Accounts.history;
     if (!account.isLogin) {
       return;
     }
     var res = await UserHttp.historyStatus(account: account);
-    if (res['status']) {
-      GStorage.localCache.put(LocalCacheKey.historyPause, res['data']);
+    if (res case Success(:final response)) {
+      GStorage.localCache.put(LocalCacheKey.historyPause, response);
     }
   }
 
@@ -63,13 +63,11 @@ abstract class RequestUtils {
   // 16：番剧（id 为 epid）
   // 17：番剧
   // https://github.com/SocialSisterYi/bilibili-API-collect/tree/master/docs/message/private_msg_content.md
-  static Future<void> pmShare({
+  static Future<bool> pmShare({
     required int receiverId,
     required Map content,
     String? message,
   }) async {
-    SmartDialog.showLoading();
-
     final ownerMid = Accounts.main.mid;
     final contentRes = await ImGrpc.sendMsg(
       senderUid: ownerMid,
@@ -82,33 +80,26 @@ abstract class RequestUtils {
 
     if (contentRes.isSuccess) {
       if (message?.isNotEmpty == true) {
-        var msgRes = await MsgHttp.sendMsg(
+        final msgRes = await ImGrpc.sendMsg(
           senderUid: ownerMid,
           receiverId: receiverId,
           content: jsonEncode({"content": message}),
-          msgType: 1,
+          msgType: MsgType.EN_MSG_TYPE_TEXT,
         );
-        Get.back();
-        if (msgRes['status']) {
-          SmartDialog.showToast('分享成功');
-        } else {
-          SmartDialog.showToast('内容分享成功，但消息分享失败: ${msgRes['msg']}');
-        }
+        return msgRes.isSuccess;
       } else {
-        Get.back();
-        SmartDialog.showToast('分享成功');
+        return true;
       }
     } else {
-      SmartDialog.showToast('分享失败: ${(contentRes as Error).errMsg}');
+      return false;
     }
-    SmartDialog.dismiss();
   }
 
   static Future<void> actionRelationMod({
     required BuildContext context,
     required dynamic mid,
     required bool isFollow,
-    required ValueChanged<int>? callback,
+    required ValueChanged<int>? afterMod,
     Map? followStatus,
   }) async {
     if (mid == null) {
@@ -121,9 +112,11 @@ abstract class RequestUtils {
         act: 1,
         reSrc: 11,
       );
-      SmartDialog.showToast(res['status'] ? "关注成功" : res['msg']);
-      if (res['status']) {
-        callback?.call(2);
+      if (res.isSuccess) {
+        SmartDialog.showToast('关注成功');
+        afterMod?.call(2);
+      } else {
+        res.toast();
       }
     } else {
       if (followStatus?['tag'] == null) {
@@ -156,11 +149,11 @@ abstract class RequestUtils {
                         fid: mid,
                         isAdd: !isSpecialFollowed,
                       );
-                      if (res['status']) {
+                      if (res.isSuccess) {
                         SmartDialog.showToast('$text成功');
-                        callback?.call(isSpecialFollowed ? 2 : -10);
+                        afterMod?.call(isSpecialFollowed ? 2 : -10);
                       } else {
-                        SmartDialog.showToast(res['msg']);
+                        res.toast();
                       }
                     },
                     title: Text(
@@ -203,7 +196,7 @@ abstract class RequestUtils {
                       );
                       followStatus!['tag'] = result?.toList();
                       if (result != null) {
-                        callback?.call(result.contains(-10) ? -10 : 2);
+                        afterMod?.call(result.contains(-10) ? -10 : 2);
                       }
                     },
                     title: const Text(
@@ -220,11 +213,11 @@ abstract class RequestUtils {
                         act: 2,
                         reSrc: 11,
                       );
-                      SmartDialog.showToast(
-                        res['status'] ? "取消关注成功" : res['msg'],
-                      );
-                      if (res['status']) {
-                        callback?.call(0);
+                      if (res.isSuccess) {
+                        SmartDialog.showToast('取消关注成功');
+                        afterMod?.call(0);
+                      } else {
+                        res.toast();
                       }
                     },
                     title: const Text(
@@ -334,7 +327,7 @@ abstract class RequestUtils {
                         '/webview',
                         parameters: {
                           'url':
-                              'https://www.bilibili.com/h5/comment/appeal?native.theme=2&night=${Get.isDarkMode ? 1 : 0}',
+                              'https://www.bilibili.com/h5/comment/appeal?${Utils.themeUrl(Get.isDarkMode)}',
                         },
                       );
                     },
@@ -371,7 +364,7 @@ abstract class RequestUtils {
     bool status = like?.status ?? false;
     int up = status ? 2 : 1;
     var res = await DynamicsHttp.thumbDynamic(dynamicId: dynamicId, up: up);
-    if (res['status']) {
+    if (res.isSuccess) {
       SmartDialog.showToast(!status ? '点赞成功' : '取消赞');
       if (up == 1) {
         like
@@ -384,7 +377,7 @@ abstract class RequestUtils {
       }
       onSuccess();
     } else {
-      SmartDialog.showToast(res['msg']);
+      res.toast();
     }
   }
 
@@ -540,7 +533,7 @@ abstract class RequestUtils {
       }
     }
 
-    if (Utils.isDesktop) {
+    if (PlatformUtils.isDesktop) {
       final json = await Get.dialog<Map<String, dynamic>>(
         GeetestWebviewDialog(gt!, challenge!),
       );
@@ -568,7 +561,7 @@ abstract class RequestUtils {
         onClose: (Map<String, dynamic> message) {
           SmartDialog.showToast('关闭验证');
         },
-        onResult: (Map<String, dynamic> message) async {
+        onResult: (Map<String, dynamic> message) {
           if (kDebugMode) debugPrint("Captcha result: $message");
           String code = message["code"];
           if (code == "1") {

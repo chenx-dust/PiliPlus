@@ -16,8 +16,8 @@ import 'package:PiliPlus/pages/download/detail/widgets/item.dart';
 import 'package:PiliPlus/pages/download/search/view.dart';
 import 'package:PiliPlus/services/download/download_service.dart';
 import 'package:PiliPlus/utils/grid.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/storage.dart';
-import 'package:PiliPlus/utils/utils.dart';
 import 'package:flutter/material.dart'
     hide SliverGridDelegateWithMaxCrossAxisExtent;
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
@@ -33,7 +33,7 @@ class DownloadPage extends StatefulWidget {
 class _DownloadPageState extends State<DownloadPage> {
   final _downloadService = Get.find<DownloadService>();
   final _controller = Get.put(DownloadPageController());
-  final _progress = ValueNotifier(null);
+  final _progress = ChangeNotifier();
 
   @override
   void dispose() {
@@ -68,7 +68,7 @@ class _DownloadPageState extends State<DownloadPage> {
                   _controller.handleSelect();
                   final list = <BiliDownloadEntryInfo>[];
                   for (var page in allChecked) {
-                    list.addAll(page.entrys);
+                    list.addAll(page.entries);
                   }
                   final res = await Future.wait(
                     list.map(
@@ -181,8 +181,8 @@ class _DownloadPageState extends State<DownloadPage> {
                               ),
                           itemBuilder: (context, index) {
                             final item = _controller.pages[index];
-                            if (item.entrys.length == 1) {
-                              final entry = item.entrys.first;
+                            if (item.entries.length == 1) {
+                              final entry = item.entries.first;
                               return DetailItem(
                                 entry: entry,
                                 progress: _progress,
@@ -197,7 +197,7 @@ class _DownloadPageState extends State<DownloadPage> {
                                     entry.cid.toString(),
                                   );
                                 },
-                                checked: item.checked ?? false,
+                                checked: item.checked,
                                 onSelect: (_) => _controller.onSelect(item),
                                 controller: _controller,
                               );
@@ -249,7 +249,7 @@ class _DownloadPageState extends State<DownloadPage> {
                           title: '确定删除？',
                           onConfirm: () async {
                             await GStorage.watchProgress.deleteAll(
-                              pageInfo.entrys.map((e) => e.cid.toString()),
+                              pageInfo.entries.map((e) => e.cid.toString()),
                             );
                             _downloadService.deletePage(
                               pageDirPath: pageInfo.dirPath,
@@ -267,7 +267,7 @@ class _DownloadPageState extends State<DownloadPage> {
                       onTap: () async {
                         Get.back();
                         final res = await Future.wait(
-                          pageInfo.entrys.map(
+                          pageInfo.entries.map(
                             (e) => _downloadService.downloadDanmaku(
                               entry: e,
                               isUpdate: true,
@@ -291,7 +291,7 @@ class _DownloadPageState extends State<DownloadPage> {
               );
             },
           );
-    final first = pageInfo.entrys.first;
+    final first = pageInfo.entries.first;
     return Material(
       type: MaterialType.transparency,
       child: InkWell(
@@ -309,7 +309,7 @@ class _DownloadPageState extends State<DownloadPage> {
           );
         },
         onLongPress: onLongPress,
-        onSecondaryTap: Utils.isMobile ? null : onLongPress,
+        onSecondaryTap: PlatformUtils.isMobile ? null : onLongPress,
         child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: StyleString.safeSpace,
@@ -332,7 +332,7 @@ class _DownloadPageState extends State<DownloadPage> {
                     ),
                   ),
                   PBadge(
-                    text: '${pageInfo.entrys.length}个视频',
+                    text: '${pageInfo.entries.length}个视频',
                     right: 6.0,
                     bottom: 6.0,
                     isBold: false,
@@ -354,7 +354,7 @@ class _DownloadPageState extends State<DownloadPage> {
                       top: 6.0,
                     ),
                   Positioned.fill(
-                    child: selectMask(theme, pageInfo.checked ?? false),
+                    child: selectMask(theme, pageInfo.checked),
                   ),
                 ],
               ),
@@ -391,7 +391,7 @@ class _DownloadPageState extends State<DownloadPage> {
                           )
                         else
                           const Spacer(),
-                        pageInfo.entrys.first.moreBtn(theme),
+                        pageInfo.entries.first.moreBtn(theme),
                       ],
                     ),
                   ],

@@ -2,6 +2,7 @@ import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/loading_widget.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/pages/log_table/controller.dart';
+import 'package:PiliPlus/utils/extension/widget_ext.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -21,23 +22,18 @@ class _LogPageState<T> extends State<LogPage<T>> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(title: Text(_controller.title)),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 680),
-          child: CustomScrollView(
-            slivers: [
-              SliverPadding(
-                padding: EdgeInsets.only(
-                  left: 10 + padding.left,
-                  right: 10 + padding.right,
-                  bottom: padding.bottom + 100,
-                ),
-                sliver: Obx(() => _buildBody(_controller.loadingState.value)),
-              ),
-            ],
+      body: CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: EdgeInsets.only(
+              left: 10 + padding.left,
+              right: 10 + padding.right,
+              bottom: padding.bottom + 100,
+            ),
+            sliver: Obx(() => _buildBody(_controller.loadingState.value)),
           ),
-        ),
-      ),
+        ],
+      ).constraintWidth(constraints: const BoxConstraints(maxWidth: 680)),
     );
   }
 
@@ -45,7 +41,7 @@ class _LogPageState<T> extends State<LogPage<T>> {
     return switch (loadingState) {
       Loading() => linearLoading,
       Success(:var response) =>
-        response?.isNotEmpty == true
+        response != null && response.isNotEmpty
             ? Builder(
                 builder: (context) {
                   final them = Theme.of(context);
@@ -78,7 +74,7 @@ class _LogPageState<T> extends State<LogPage<T>> {
                       ),
                       sliverDivider,
                       SliverList.separated(
-                        itemCount: response!.length,
+                        itemCount: response.length,
                         itemBuilder: (context, index) {
                           return _item(response[index], dividerV);
                         },

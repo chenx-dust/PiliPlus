@@ -10,7 +10,7 @@ import 'package:PiliPlus/common/widgets/scroll_physics.dart';
 import 'package:PiliPlus/models/common/image_type.dart';
 import 'package:PiliPlus/models_new/live/live_room_info_h5/data.dart';
 import 'package:PiliPlus/models_new/live/live_superchat/item.dart';
-import 'package:PiliPlus/pages/danmaku/dnamaku_model.dart';
+import 'package:PiliPlus/pages/danmaku/danmaku_model.dart';
 import 'package:PiliPlus/pages/live_room/controller.dart';
 import 'package:PiliPlus/pages/live_room/superchat/superchat_card.dart';
 import 'package:PiliPlus/pages/live_room/superchat/superchat_panel.dart';
@@ -23,8 +23,11 @@ import 'package:PiliPlus/plugin/pl_player/models/play_status.dart';
 import 'package:PiliPlus/plugin/pl_player/utils/fullscreen.dart';
 import 'package:PiliPlus/plugin/pl_player/view.dart';
 import 'package:PiliPlus/services/service_locator.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/size_ext.dart';
+import 'package:PiliPlus/utils/extension/string_ext.dart';
+import 'package:PiliPlus/utils/extension/theme_ext.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/storage_key.dart';
 import 'package:PiliPlus/utils/utils.dart';
@@ -376,12 +379,12 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                     ?.roomInfo
                     ?.appBackground;
                 Widget child;
-                if (appBackground?.isNotEmpty == true) {
+                if (appBackground != null && appBackground.isNotEmpty) {
                   child = CachedNetworkImage(
                     fit: BoxFit.cover,
                     width: maxWidth,
                     height: maxHeight,
-                    imageUrl: appBackground!.http2https,
+                    imageUrl: appBackground.http2https,
                   );
                 } else {
                   child = Image.asset(
@@ -517,13 +520,14 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                         type: ImageType.avatar,
                         src: roomInfoH5.anchorInfo!.baseInfo!.face,
                       ),
-                      Expanded(
+                      Flexible(
                         child: Column(
                           spacing: 1,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
                               spacing: 10,
+                              mainAxisSize: .min,
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Flexible(
@@ -540,6 +544,7 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                             ),
                             Row(
                               spacing: 10,
+                              mainAxisSize: .min,
                               children: [
                                 _liveRoomController.watchedWidget,
                                 _liveRoomController.timeWidget,
@@ -580,7 +585,7 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                   ],
                 ),
               ),
-              if (Utils.isMobile)
+              if (PlatformUtils.isMobile)
                 PopupMenuItem(
                   onTap: () => Utils.shareText(liveUrl),
                   child: Row(
@@ -657,8 +662,8 @@ class _LiveRoomPageState extends State<LiveRoomPage>
   Widget _buildBodyH(bool isFullScreen) {
     double videoWidth =
         clampDouble(maxHeight / maxWidth * 1.08, 0.56, 0.7) * maxWidth;
-    final rigthWidth = min(400.0, maxWidth - videoWidth - padding.horizontal);
-    videoWidth = maxWidth - rigthWidth - padding.horizontal;
+    final rightWidth = min(400.0, maxWidth - videoWidth - padding.horizontal);
+    videoWidth = maxWidth - rightWidth - padding.horizontal;
     final videoHeight = maxHeight - padding.top;
     final width = isFullScreen ? maxWidth : videoWidth;
     final height = isFullScreen ? maxHeight - padding.top : videoHeight;
@@ -682,7 +687,7 @@ class _LiveRoomPageState extends State<LiveRoomPage>
           Offstage(
             offstage: isFullScreen,
             child: SizedBox(
-              width: rigthWidth,
+              width: rightWidth,
               height: videoHeight,
               child: _buildBottomWidget,
             ),

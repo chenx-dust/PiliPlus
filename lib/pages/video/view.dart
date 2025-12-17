@@ -48,13 +48,14 @@ import 'package:PiliPlus/plugin/pl_player/view.dart';
 import 'package:PiliPlus/services/service_locator.dart';
 import 'package:PiliPlus/services/shutdown_timer_service.dart';
 import 'package:PiliPlus/utils/accounts.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/scroll_controller_ext.dart';
+import 'package:PiliPlus/utils/extension/theme_ext.dart';
 import 'package:PiliPlus/utils/image_utils.dart';
 import 'package:PiliPlus/utils/num_utils.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/storage_key.dart';
-import 'package:PiliPlus/utils/utils.dart';
 import 'package:auto_orientation/auto_orientation.dart';
 import 'package:extended_nested_scroll_view/extended_nested_scroll_view.dart';
 import 'package:floating/floating.dart';
@@ -198,7 +199,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
         }
       }
     } else if (state == AppLifecycleState.paused) {
-      introController.canelTimer();
+      introController.cancelTimer();
       ctr.showDanmaku = false;
     }
   }
@@ -231,7 +232,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
         }
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('handle playe status: $e');
+      if (kDebugMode) debugPrint('handle player status: $e');
     }
 
     if (status == PlayerStatus.completed) {
@@ -343,10 +344,10 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
     if (!videoDetailController.isFileSource) {
       if (videoDetailController.isUgc) {
         ugcIntroController
-          ..canelTimer()
+          ..cancelTimer()
           ..videoDetail.close();
       } else {
-        pgcIntroController.canelTimer();
+        pgcIntroController.cancelTimer();
       }
     }
     if (!videoDetailController.horizontalScreen) {
@@ -364,7 +365,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
     }
     PageUtils.routeObserver.unsubscribe(this);
     WidgetsBinding.instance.removeObserver(this);
-    if (Utils.isMobile) {
+    if (PlatformUtils.isMobile) {
       showStatusBar();
     }
     super.dispose();
@@ -386,7 +387,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
 
     videoDetailController.positionSubscription?.cancel();
 
-    introController.canelTimer();
+    introController.cancelTimer();
 
     videoDetailController
       ..playerStatus = plPlayerController?.playerStatus.value
@@ -529,7 +530,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
     videoDetailController.animationController
       ..removeListener(animListener)
       ..addListener(animListener);
-    if (Utils.isMobile && mounted && isShowing && !isFullScreen) {
+    if (PlatformUtils.isMobile && mounted && isShowing && !isFullScreen) {
       if (isPortrait) {
         if (!videoDetailController.imageview) {
           showStatusBar();
@@ -538,7 +539,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
         hideStatusBar();
       }
     }
-    if (Utils.isMobile) {
+    if (PlatformUtils.isMobile) {
       if (!isPortrait &&
           !isFullScreen &&
           plPlayerController != null &&
@@ -857,7 +858,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
               backgroundColor: Colors.transparent,
               body: Column(
                 children: [
-                  buildTabbar(onTap: videoDetailController.animToTop),
+                  buildTabBar(onTap: videoDetailController.animToTop),
                   Expanded(
                     child: videoTabBarView(
                       controller: videoDetailController.tabCtr,
@@ -926,7 +927,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
               body: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  buildTabbar(),
+                  buildTabBar(),
                   Expanded(
                     child: videoTabBarView(
                       controller: videoDetailController.tabCtr,
@@ -994,7 +995,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
                 backgroundColor: Colors.transparent,
                 body: Column(
                   children: [
-                    buildTabbar(showIntro: false),
+                    buildTabBar(showIntro: false),
                     Expanded(
                       child: videoTabBarView(
                         controller: videoDetailController.tabCtr,
@@ -1067,7 +1068,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
               body: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  buildTabbar(
+                  buildTabBar(
                     needIndicator: false,
                     showIntro: false,
                   ),
@@ -1141,7 +1142,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
                 body: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    buildTabbar(needIndicator: false),
+                    buildTabBar(needIndicator: false),
                     Expanded(
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1399,7 +1400,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
         : child;
   }
 
-  Widget buildTabbar({
+  Widget buildTabBar({
     bool needIndicator = true,
     String? introText,
     bool showIntro = true,
@@ -1423,7 +1424,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
     }
 
     final flag = !needIndicator || tabs.length == 1;
-    Widget tabbar() => TabBar(
+    Widget tabBar() => TabBar(
       labelColor: flag ? themeData.colorScheme.onSurface : null,
       indicator: flag ? const BoxDecoration() : null,
       padding: EdgeInsets.zero,
@@ -1487,7 +1488,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
           else
             Flexible(
               flex: tabs.length == 3 ? 2 : 1,
-              child: tabbar(),
+              child: tabBar(),
             ),
           Flexible(
             flex: 1,

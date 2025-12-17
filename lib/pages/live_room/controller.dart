@@ -12,7 +12,7 @@ import 'package:PiliPlus/models_new/live/live_dm_info/data.dart';
 import 'package:PiliPlus/models_new/live/live_room_info_h5/data.dart';
 import 'package:PiliPlus/models_new/live/live_room_play_info/codec.dart';
 import 'package:PiliPlus/models_new/live/live_superchat/item.dart';
-import 'package:PiliPlus/pages/danmaku/dnamaku_model.dart';
+import 'package:PiliPlus/pages/danmaku/danmaku_model.dart';
 import 'package:PiliPlus/pages/live_room/send_danmaku/view.dart';
 import 'package:PiliPlus/pages/video/widgets/header_control.dart';
 import 'package:PiliPlus/plugin/pl_player/controller.dart';
@@ -22,8 +22,9 @@ import 'package:PiliPlus/tcp/live.dart';
 import 'package:PiliPlus/utils/accounts.dart';
 import 'package:PiliPlus/utils/danmaku_utils.dart';
 import 'package:PiliPlus/utils/duration_utils.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/iterable_ext.dart';
 import 'package:PiliPlus/utils/num_utils.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
 import 'package:PiliPlus/utils/utils.dart';
 import 'package:PiliPlus/utils/video_utils.dart';
@@ -99,13 +100,14 @@ class LiveRoomController extends GetxController {
   late final RxInt pageIndex = 0.obs;
   PageController? pageController;
 
-  int? currentQn = Utils.isMobile ? null : Pref.liveQuality;
+  int? currentQn = PlatformUtils.isMobile ? null : Pref.liveQuality;
   RxString currentQnDesc = ''.obs;
   final RxBool isPortrait = false.obs;
   late List<({int code, String desc})> acceptQnList = [];
 
   late final bool isLogin;
   late final int mid;
+  late final int mainMid = Accounts.main.mid;
 
   String? videoUrl;
   bool? isPlaying;
@@ -231,16 +233,14 @@ class LiveRoomController extends GetxController {
 
   Future<void> queryLiveInfoH5() async {
     var res = await LiveHttp.liveRoomInfoH5(roomId: roomId);
-    if (res['status']) {
-      RoomInfoH5Data data = res['data'];
+    if (res.isSuccess) {
+      final data = res.data;
       roomInfoH5.value = data;
       title.value = data.roomInfo?.title ?? '';
       watchedShow.value = data.watchedShow?.textLarge;
       videoPlayerServiceHandler?.onVideoDetailChange(data, roomId, heroTag);
     } else {
-      if (res['msg'] != null) {
-        _showDialog(res['msg']);
-      }
+      res.toast();
     }
   }
 
@@ -329,9 +329,8 @@ class LiveRoomController extends GetxController {
       return;
     }
     LiveHttp.liveRoomGetDanmakuToken(roomId: roomId).then((res) {
-      if (res['status']) {
-        dmInfo = res['data'];
-        initDm(dmInfo!);
+      if (res.isSuccess) {
+        initDm(dmInfo = res.data);
       }
     });
   }
@@ -435,7 +434,8 @@ class LiveRoomController extends GetxController {
                     ? Colors.white
                     : DmUtils.decimalToColor(extra['color']),
                 type: DmUtils.getPosition(extra['mode']),
-                selfSend: extra['send_from_me'] ?? false,
+                // extra['send_from_me'] is invalid
+                selfSend: uid == mainMid,
                 extra: LiveDanmaku(
                   id: extra['id_str'],
                   mid: uid,
@@ -509,10 +509,10 @@ class LiveRoomController extends GetxController {
       uid: mid,
       anchorId: roomInfoH5.value?.roomInfo?.uid,
     );
-    if (res['status']) {
+    if (res.isSuccess) {
       SmartDialog.showToast('点赞成功');
     } else {
-      SmartDialog.showToast(res['msg']);
+      res.toast();
     }
     likeClickTime.value = 0;
   }

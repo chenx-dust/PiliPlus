@@ -23,6 +23,7 @@ class DynMentionItem extends StatelessWidget {
       child: ListTile(
         dense: true,
         onTap: onTap,
+        visualDensity: .standard,
         leading: NetworkImgLayer(
           src: item.face,
           width: 42,
@@ -39,9 +40,9 @@ class DynMentionItem extends StatelessWidget {
         ),
         trailing: Checkbox(
           tristate: false,
-          value: item.checked ?? false,
+          value: item.checked,
           onChanged: (value) {
-            item.checked = value;
+            item.checked = value!;
             (context as Element).markNeedsBuild();
             onCheck(value);
           },

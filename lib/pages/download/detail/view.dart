@@ -27,7 +27,7 @@ class DownloadDetailPage extends StatefulWidget {
 
   final String pageId;
   final String title;
-  final ValueNotifier progress;
+  final ChangeNotifier progress;
 
   @override
   State<DownloadDetailPage> createState() => _DownloadDetailPageState();
@@ -70,7 +70,7 @@ class _DownloadDetailPageState extends State<DownloadDetailPage>
     final list =
         _controller.pages
             .firstWhereOrNull((e) => e.pageId == widget.pageId)
-            ?.entrys
+            ?.entries
           ?..sort((a, b) => a.sortKey.compareTo(b.sortKey));
     if (list != null) {
       _downloadItems.value = list;
@@ -81,6 +81,7 @@ class _DownloadDetailPageState extends State<DownloadDetailPage>
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = ColorScheme.of(context);
     return Obx(() {
       final enableMultiSelect = this.enableMultiSelect.value;
       return PopScope(
@@ -118,7 +119,7 @@ class _DownloadDetailPageState extends State<DownloadDetailPage>
                 },
                 child: Text(
                   '更新',
-                  style: TextStyle(color: Get.theme.colorScheme.onSurface),
+                  style: TextStyle(color: colorScheme.onSurface),
                 ),
               ),
             ],

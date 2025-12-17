@@ -20,7 +20,7 @@ class RepostPanel extends CommonRichTextPubPage {
     super.key,
     this.item,
     this.dynIdStr,
-    this.callback,
+    this.onSuccess,
     // video
     this.rid,
     this.dynType,
@@ -38,7 +38,7 @@ class RepostPanel extends CommonRichTextPubPage {
 
   final DynamicItemModel? item;
   final String? dynIdStr;
-  final VoidCallback? callback;
+  final VoidCallback? onSuccess;
 
   @override
   State<RepostPanel> createState() => _RepostPanelState();
@@ -110,7 +110,7 @@ class _RepostPanelState extends CommonRichTextPubPageState<RepostPanel> {
           buildPanelContainer(theme, Colors.transparent),
         ] else ...[
           ..._buildEditPanel(theme),
-          ..._biuldDismiss(theme),
+          ..._buildDismiss(theme),
         ],
       ],
     );
@@ -207,9 +207,9 @@ class _RepostPanelState extends CommonRichTextPubPageState<RepostPanel> {
     onTap: () {
       setState(() => _isMax = true);
       Future.delayed(const Duration(milliseconds: 300), () {
-        _isExpanded = true;
         if (mounted) {
           focusNode.requestFocus();
+          setState(() => _isExpanded = true);
         }
       });
     },
@@ -226,33 +226,31 @@ class _RepostPanelState extends CommonRichTextPubPageState<RepostPanel> {
     ),
   );
 
-  Widget _buildEditWidget(ThemeData theme) => Form(
-    autovalidateMode: AutovalidateMode.onUserInteraction,
-    child: Listener(
-      onPointerUp: (event) {
-        if (readOnly.value) {
-          updatePanelType(PanelType.keyboard);
-        }
-      },
-      child: Obx(
-        () => RichTextField(
-          key: key,
-          controller: editController,
-          minLines: 4,
-          maxLines: null,
-          focusNode: focusNode,
-          readOnly: readOnly.value,
-          decoration: InputDecoration(
-            hintText: '说点什么吧',
-            hintStyle: TextStyle(color: theme.colorScheme.outline),
-            border: const OutlineInputBorder(
-              borderSide: BorderSide.none,
-              gapPadding: 0,
-            ),
-            contentPadding: EdgeInsets.zero,
+  Widget _buildEditWidget(ThemeData theme) => Listener(
+    onPointerUp: (event) {
+      if (readOnly.value) {
+        updatePanelType(PanelType.keyboard);
+      }
+    },
+    child: Obx(
+      () => RichTextField(
+        key: key,
+        controller: editController,
+        minLines: 4,
+        maxLines: null,
+        focusNode: focusNode,
+        onSubmitted: onSubmitted,
+        readOnly: readOnly.value,
+        decoration: InputDecoration(
+          hintText: '说点什么吧',
+          hintStyle: TextStyle(color: theme.colorScheme.outline),
+          border: const OutlineInputBorder(
+            borderSide: BorderSide.none,
+            gapPadding: 0,
           ),
-          // inputFormatters: [LengthLimitingTextInputFormatter(1000)],
+          contentPadding: EdgeInsets.zero,
         ),
+        // inputFormatters: [LengthLimitingTextInputFormatter(1000)],
       ),
     ),
   );
@@ -347,7 +345,7 @@ class _RepostPanelState extends CommonRichTextPubPageState<RepostPanel> {
     ),
   );
 
-  List<Widget> _biuldDismiss(ThemeData theme) => [
+  List<Widget> _buildDismiss(ThemeData theme) => [
     const SizedBox(height: 10),
     Divider(
       height: 1,
@@ -432,7 +430,7 @@ class _RepostPanelState extends CommonRichTextPubPageState<RepostPanel> {
       hasPub = true;
       Get.back();
       SmartDialog.showToast('转发成功');
-      widget.callback?.call();
+      widget.onSuccess?.call();
       var id = result['data']?['dyn_id'];
       RequestUtils.insertCreatedDyn(id);
       RequestUtils.checkCreatedDyn(

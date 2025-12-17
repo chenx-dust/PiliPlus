@@ -1,3 +1,4 @@
+import 'package:PiliPlus/common/widgets/scroll_physics.dart' show ReloadMixin;
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/http/video.dart';
 import 'package:PiliPlus/models/model_hot_video_item.dart';
@@ -5,11 +6,12 @@ import 'package:PiliPlus/models_new/popular/popular_series_list/list.dart';
 import 'package:PiliPlus/models_new/popular/popular_series_one/config.dart';
 import 'package:PiliPlus/models_new/popular/popular_series_one/data.dart';
 import 'package:PiliPlus/pages/common/common_list_controller.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/iterable_ext.dart';
 import 'package:get/get.dart';
 
 class PopularSeriesController
-    extends CommonListController<PopularSeriesOneData, HotVideoItemModel> {
+    extends CommonListController<PopularSeriesOneData, HotVideoItemModel>
+    with ReloadMixin {
   late int number;
 
   final Rx<PopularSeriesConfig?> config = Rx<PopularSeriesConfig?>(null);
@@ -54,6 +56,7 @@ class PopularSeriesController
     if (seriesList.isNullOrEmpty) {
       return _getSeriesList();
     }
+    reload = true;
     return super.onReload();
   }
 }

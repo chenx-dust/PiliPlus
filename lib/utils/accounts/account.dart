@@ -8,13 +8,13 @@ import 'package:hive/hive.dart';
 sealed class Account {
   Map<String, dynamic>? toJson() => null;
 
-  Future<void> onChange() => Future.value();
+  Future<void> onChange() => Future.syncValue(null);
 
   Set<AccountType> get type => const {};
 
-  bool get activited => false;
+  bool get activated => false;
 
-  set activited(bool value) => throw UnimplementedError();
+  set activated(bool value) => throw UnimplementedError();
 
   String? get accessKey => throw UnimplementedError();
 
@@ -53,7 +53,7 @@ class LoginAccount extends Account {
   final Set<AccountType> type;
 
   @override
-  bool activited = false;
+  bool activated = false;
 
   @override
   late final int mid = int.parse(_midStr);
@@ -74,7 +74,7 @@ class LoginAccount extends Account {
   @override
   Future<void> delete() {
     assert(_hasDelete = true);
-    return _box.delete(_midStr);
+    return Future.wait([cookieJar.deleteAll(), _box.delete(_midStr)]);
   }
 
   @override
@@ -141,13 +141,11 @@ class AnonymousAccount extends Account {
   final Map<String, String> headers = Constants.baseHeaders;
 
   @override
-  bool activited = false;
+  bool activated = false;
 
   @override
-  Future<void> delete() async {
-    await cookieJar.deleteAll();
-    cookieJar.setBuvid3();
-  }
+  Future<void> delete() =>
+      cookieJar.deleteAll().whenComplete(cookieJar.setBuvid3);
 
   static final _instance = AnonymousAccount._();
 
@@ -166,16 +164,15 @@ class AnonymousAccount extends Account {
 
 extension BiliCookie on Cookie {
   void setBiliDomain([String domain = '.bilibili.com']) {
-    this
-      ..domain = domain
-      ..httpOnly = false
-      ..path = '/';
+    this.domain = domain;
+    httpOnly = false;
+    path = '/';
   }
 }
 
 extension BiliCookieJar on DefaultCookieJar {
   Map<String, String> toJson() {
-    final cookies = domainCookies['bilibili.com']?['/'] ?? {};
+    final cookies = domainCookies['bilibili.com']?['/'] ?? const {};
     return {for (var i in cookies.values) i.cookie.name: i.cookie.value};
   }
 

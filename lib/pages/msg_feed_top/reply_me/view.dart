@@ -13,7 +13,7 @@ import 'package:PiliPlus/pages/msg_feed_top/reply_me/controller.dart';
 import 'package:PiliPlus/pages/whisper_settings/view.dart';
 import 'package:PiliPlus/utils/app_scheme.dart';
 import 'package:PiliPlus/utils/date_utils.dart';
-import 'package:PiliPlus/utils/utils.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:flutter/material.dart' hide ListTile;
 import 'package:get/get.dart';
 
@@ -85,9 +85,9 @@ class _ReplyMePageState extends State<ReplyMePage> {
         itemBuilder: (context, index) => const MsgFeedTopSkeleton(),
       ),
       Success(:var response) =>
-        response?.isNotEmpty == true
+        response != null && response.isNotEmpty
             ? SliverList.separated(
-                itemCount: response!.length,
+                itemCount: response.length,
                 itemBuilder: (context, int index) {
                   if (index == response.length - 1) {
                     _replyMeController.onLoadMore();
@@ -118,7 +118,7 @@ class _ReplyMePageState extends State<ReplyMePage> {
                       );
                     },
                     onLongPress: onLongPress,
-                    onSecondaryTap: Utils.isMobile ? null : onLongPress,
+                    onSecondaryTap: PlatformUtils.isMobile ? null : onLongPress,
                     leading: GestureDetector(
                       onTap: () => Get.toNamed('/member?mid=${item.user?.mid}'),
                       child: NetworkImgLayer(

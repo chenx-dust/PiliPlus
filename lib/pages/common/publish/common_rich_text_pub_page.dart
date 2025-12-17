@@ -10,13 +10,13 @@ import 'package:PiliPlus/models/common/publish_panel_type.dart';
 import 'package:PiliPlus/models_new/dynamic/dyn_mention/item.dart';
 import 'package:PiliPlus/models_new/emote/emote.dart' as e;
 import 'package:PiliPlus/models_new/live/live_emote/emoticon.dart';
-import 'package:PiliPlus/models_new/upload_bfs/data.dart';
 import 'package:PiliPlus/pages/common/publish/common_publish_page.dart';
 import 'package:PiliPlus/pages/dynamics_mention/view.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/file_ext.dart';
+import 'package:PiliPlus/utils/extension/theme_ext.dart';
 import 'package:PiliPlus/utils/feed_back.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
-import 'package:PiliPlus/utils/utils.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:dio/dio.dart' show CancelToken;
 import 'package:easy_debounce/easy_throttle.dart';
 import 'package:flutter/material.dart';
@@ -62,7 +62,7 @@ abstract class CommonRichTextPubPageState<T extends CommonRichTextPubPage>
 
   @override
   void dispose() {
-    if (Utils.isMobile) {
+    if (PlatformUtils.isMobile) {
       for (var i in pathList) {
         File(i).tryDel();
       }
@@ -83,7 +83,7 @@ abstract class CommonRichTextPubPageState<T extends CommonRichTextPubPage>
 
     void onClear() {
       final path = pathList.removeAt(index);
-      if (Utils.isMobile) {
+      if (PlatformUtils.isMobile) {
         File(path).tryDel();
       }
       if (pathList.isEmpty && editController.rawText.trim().isEmpty) {
@@ -111,7 +111,7 @@ abstract class CommonRichTextPubPageState<T extends CommonRichTextPubPage>
             controller.restoreChatPanel();
           },
           onLongPress: onClear,
-          onSecondaryTap: Utils.isMobile ? null : onClear,
+          onSecondaryTap: PlatformUtils.isMobile ? null : onClear,
           child: ClipRRect(
             borderRadius: const BorderRadius.all(Radius.circular(4)),
             child: Image(
@@ -122,7 +122,7 @@ abstract class CommonRichTextPubPageState<T extends CommonRichTextPubPage>
             ),
           ),
         ),
-        if (Utils.isMobile)
+        if (PlatformUtils.isMobile)
           Positioned(
             top: 34,
             right: 5,
@@ -273,14 +273,14 @@ abstract class CommonRichTextPubPageState<T extends CommonRichTextPubPage>
     final res = await DynMentionPanel.onDynMention(
       context,
       offset: _mentionOffset,
-      callback: (offset) => _mentionOffset = offset,
+      onCachePos: (offset) => _mentionOffset = offset,
     );
     if (res != null) {
       if (res is MentionItem) {
         _onInsertUser(res, fromClick);
       } else if (res is Set<MentionItem>) {
         for (var e in res) {
-          e.checked = null;
+          e.checked = false;
           _onInsertUser(e, fromClick);
         }
         res.clear();
@@ -462,14 +462,13 @@ abstract class CommonRichTextPubPageState<T extends CommonRichTextPubPage>
       try {
         pictures = await Future.wait<Map<String, dynamic>>(
           pathList.map((path) async {
-            Map result = await MsgHttp.uploadBfs(
+            final result = await MsgHttp.uploadBfs(
               path: path,
               category: 'daily',
               biz: 'new_dyn',
               cancelToken: cancelToken,
             );
-            if (!result['status']) throw HttpException(result['msg']);
-            UploadBfsResData data = result['data'];
+            final data = result.data;
             return {
               'img_width': data.imageWidth,
               'img_height': data.imageHeight,

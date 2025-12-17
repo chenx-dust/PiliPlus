@@ -688,7 +688,8 @@ class Api {
   // static const String videoTags = '/x/tag/archive/tags';
   static const String videoTags = '/x/web-interface/view/detail/tag';
 
-  static const String reportMember = '/ajax/report/add';
+  static const String reportMember =
+      '${HttpString.spaceBaseUrl}/ajax/report/add';
 
   static const String removeMsg = '/session_svr/v1/session_svr/remove_session';
 
@@ -974,4 +975,7 @@ class Api {
   static const String sameFollowing = '/x/relation/same/followings';
 
   static const String seasonStatus = '/pgc/view/web/season/user/status';
+
+  static const String followeeVotes =
+      '${HttpString.tUrl}/vote_svr/v1/vote_svr/followee_votes';
 }

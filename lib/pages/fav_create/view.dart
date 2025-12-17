@@ -2,12 +2,13 @@ import 'dart:io' show File;
 
 import 'package:PiliPlus/common/widgets/loading_widget/loading_widget.dart';
 import 'package:PiliPlus/http/fav.dart';
+import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/http/msg.dart';
-import 'package:PiliPlus/models_new/fav/fav_folder/list.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/file_ext.dart';
+import 'package:PiliPlus/utils/extension/theme_ext.dart';
 import 'package:PiliPlus/utils/fav_utils.dart';
 import 'package:PiliPlus/utils/image_utils.dart';
-import 'package:PiliPlus/utils/utils.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_debounce/easy_throttle.dart';
 import 'package:flutter/material.dart';
@@ -46,15 +47,14 @@ class _CreateFavPageState extends State<CreateFavPage> {
   void _getFolderInfo() {
     _errMsg = null;
     FavHttp.favFolderInfo(mediaId: _mediaId).then((res) {
-      if (res['status']) {
-        FavFolderInfo data = res['data'];
-        _titleController.text = data.title;
-        _introController.text = data.intro ?? '';
-        _isPublic = FavUtils.isPublicFav(data.attr);
-        _cover = data.cover;
-        _attr = data.attr;
+      if (res case Success(:final response)) {
+        _titleController.text = response.title;
+        _introController.text = response.intro ?? '';
+        _isPublic = FavUtils.isPublicFav(response.attr);
+        _cover = response.cover;
+        _attr = response.attr;
       } else {
-        _errMsg = res['msg'];
+        _errMsg = res.toString();
       }
       setState(() {});
     });
@@ -88,11 +88,11 @@ class _CreateFavPageState extends State<CreateFavPage> {
                 cover: _cover ?? '',
                 intro: _introController.text,
               ).then((res) {
-                if (res['status']) {
-                  Get.back(result: res['data']);
+                if (res case Success(:final response)) {
+                  Get.back(result: response);
                   SmartDialog.showToast('${_mediaId != null ? '编辑' : '创建'}成功');
                 } else {
-                  SmartDialog.showToast(res['msg']);
+                  res.toast();
                 }
               });
             },
@@ -119,7 +119,7 @@ class _CreateFavPageState extends State<CreateFavPage> {
       );
       if (pickedFile != null && mounted) {
         String imgPath = pickedFile.path;
-        if (Utils.isMobile) {
+        if (PlatformUtils.isMobile) {
           final croppedFile = await ImageCropper.platform.cropImage(
             sourcePath: imgPath,
             uiSettings: [
@@ -160,7 +160,7 @@ class _CreateFavPageState extends State<CreateFavPage> {
               SmartDialog.showToast(res['msg']);
             }
           }
-          if (Utils.isMobile) {
+          if (PlatformUtils.isMobile) {
             File(imgPath).tryDel();
           }
         });

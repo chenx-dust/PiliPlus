@@ -9,8 +9,9 @@ import 'package:PiliPlus/grpc/bilibili/app/im/v1.pb.dart'
 import 'package:PiliPlus/models/common/badge_type.dart';
 import 'package:PiliPlus/pages/whisper_secondary/view.dart';
 import 'package:PiliPlus/utils/date_utils.dart';
-import 'package:PiliPlus/utils/extension.dart';
-import 'package:PiliPlus/utils/utils.dart';
+import 'package:PiliPlus/utils/extension/iterable_ext.dart';
+import 'package:PiliPlus/utils/extension/theme_ext.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:fixnum/fixnum.dart';
 import 'package:flutter/material.dart' hide ListTile;
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
@@ -28,7 +29,7 @@ class WhisperSessionItem extends StatelessWidget {
   final Session item;
   final Function(bool isTop, SessionId id) onSetTop;
   final Function(bool isMuted, Int64 talkerUid) onSetMute;
-  final ValueChanged<int?> onRemove;
+  final ValueChanged<int> onRemove;
 
   @override
   Widget build(BuildContext context) {
@@ -97,11 +98,11 @@ class WhisperSessionItem extends StatelessWidget {
       safeArea: true,
       tileColor: item.isPinned
           ? theme.colorScheme.onInverseSurface.withValues(
-              alpha: Get.isDarkMode ? 0.4 : 0.8,
+              alpha: theme.brightness.isDark ? 0.4 : 0.8,
             )
           : null,
       onLongPress: onLongPress,
-      onSecondaryTap: Utils.isMobile ? null : onLongPress,
+      onSecondaryTap: PlatformUtils.isMobile ? null : onLongPress,
       onTap: () {
         if (item.hasUnread()) {
           item.clearUnread();
@@ -163,7 +164,7 @@ class WhisperSessionItem extends StatelessWidget {
           final pendant = item.sessionInfo.avatar.fallbackLayers.layers
               .getOrNull(1)
               ?.resource;
-          final offcial = item
+          final official = item
               .sessionInfo
               .avatar
               .fallbackLayers
@@ -187,8 +188,8 @@ class WhisperSessionItem extends StatelessWidget {
                   ? pendant!.resImage.imageSrc.remote.url
                   : pendant?.resAnimation.webpSrc.remote.url,
               isVip: vipInfo?['status'] != null && vipInfo!['status'] > 0,
-              officialType: offcial?.hasLocalValue() == true
-                  ? switch (offcial!.localValue) {
+              officialType: official?.hasLocalValue() == true
+                  ? switch (official!.localValue) {
                       3 => 0,
                       4 => 1,
                       _ => null,

@@ -8,7 +8,7 @@ import 'package:PiliPlus/pages/fav/cheese/controller.dart';
 import 'package:PiliPlus/pages/fav/topic/controller.dart';
 import 'package:PiliPlus/pages/fav/video/controller.dart';
 import 'package:PiliPlus/pages/fav_folder_sort/view.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/scroll_controller_ext.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
@@ -67,8 +67,8 @@ class _FavPageState extends State<FavPage> with SingleTickerProviderStateMixin {
                               _favController.loadingState.value.isSuccess
                               ? _favController.loadingState.value.data
                               : null;
-                          if (list?.isNotEmpty == true) {
-                            list!.insert(1, data);
+                          if (list != null && list.isNotEmpty) {
+                            list.insert(1, data);
                             _favController.loadingState.refresh();
                           } else {
                             _favController.loadingState.value = Success([data]);

@@ -6,7 +6,7 @@ import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models_new/fav/fav_topic/topic_item.dart';
 import 'package:PiliPlus/pages/fav/topic/controller.dart';
 import 'package:PiliPlus/utils/grid.dart';
-import 'package:PiliPlus/utils/utils.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:flutter/material.dart'
     hide SliverGridDelegateWithMaxCrossAxisExtent;
 import 'package:get/get.dart';
@@ -72,7 +72,7 @@ class _FavTopicPageState extends State<FavTopicPage>
         ),
       ),
       Success(:var response) =>
-        response?.isNotEmpty == true
+        response != null && response.isNotEmpty
             ? SliverGrid.builder(
                 gridDelegate: gridDelegate,
                 itemBuilder: (context, index) {
@@ -84,7 +84,7 @@ class _FavTopicPageState extends State<FavTopicPage>
                   void onLongPress() => showConfirmDialog(
                     context: context,
                     title: '确定取消收藏？',
-                    onConfirm: () => _controller.onRemove(index, item.id),
+                    onConfirm: () => _controller.onRemove(index, item.id!),
                   );
 
                   return Material(
@@ -99,7 +99,9 @@ class _FavTopicPageState extends State<FavTopicPage>
                         },
                       ),
                       onLongPress: onLongPress,
-                      onSecondaryTap: Utils.isMobile ? null : onLongPress,
+                      onSecondaryTap: PlatformUtils.isMobile
+                          ? null
+                          : onLongPress,
                       borderRadius: const BorderRadius.all(
                         Radius.circular(6),
                       ),
@@ -122,7 +124,7 @@ class _FavTopicPageState extends State<FavTopicPage>
                     ),
                   );
                 },
-                itemCount: response!.length,
+                itemCount: response.length,
               )
             : HttpError(onReload: _controller.onReload),
       Error(:var errMsg) => HttpError(

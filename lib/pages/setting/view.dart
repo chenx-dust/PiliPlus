@@ -14,7 +14,7 @@ import 'package:PiliPlus/pages/setting/widgets/multi_select_dialog.dart';
 import 'package:PiliPlus/pages/webdav/view.dart';
 import 'package:PiliPlus/utils/accounts.dart';
 import 'package:PiliPlus/utils/accounts/account.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/size_ext.dart';
 import 'package:flutter/material.dart' hide ListTile;
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart' hide ContextExtensionss;
@@ -175,7 +175,7 @@ class _SettingPageState extends State<SettingPage> {
       children: [
         _buildSearchItem(theme),
         ..._items
-            .sublist(0, _items.length - 1)
+            .take(_items.length - 1)
             .map(
               (item) => ListTile(
                 tileColor: _getTileColor(theme, item.type),
@@ -222,9 +222,9 @@ class _SettingPageState extends State<SettingPage> {
         );
       },
     );
-    if (!context.mounted || result.isNullOrEmpty) return;
+    if (!context.mounted || result == null || result.isEmpty) return;
     Future<void> logout() {
-      _noAccount.value = result!.length == Accounts.account.length;
+      _noAccount.value = result.length == Accounts.account.length;
       return Accounts.deleteAll(result);
     }
 
@@ -235,7 +235,7 @@ class _SettingPageState extends State<SettingPage> {
         return AlertDialog(
           title: const Text('提示'),
           content: Text(
-            "确认要退出以下账号登录吗\n\n${result!.map((i) => i.mid.toString()).join('\n')}",
+            "确认要退出以下账号登录吗\n\n${result.map((i) => i.mid.toString()).join('\n')}",
           ),
           actions: [
             TextButton(

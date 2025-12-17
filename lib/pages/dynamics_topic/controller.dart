@@ -7,7 +7,7 @@ import 'package:PiliPlus/models_new/dynamic/dyn_topic_feed/topic_sort_by_conf.da
 import 'package:PiliPlus/models_new/dynamic/dyn_topic_top/top_details.dart';
 import 'package:PiliPlus/pages/common/common_list_controller.dart';
 import 'package:PiliPlus/utils/accounts.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/scroll_controller_ext.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
 
@@ -100,7 +100,7 @@ class DynTopicController
     var res = isFav
         ? await FavHttp.delFavTopic(topicId)
         : await FavHttp.addFavTopic(topicId);
-    if (res['status']) {
+    if (res.isSuccess) {
       if (isFav) {
         topState.value.data!.topicItem!.fav -= 1;
       } else {
@@ -108,7 +108,7 @@ class DynTopicController
       }
       this.isFav.value = !isFav;
     } else {
-      SmartDialog.showToast(res['msg']);
+      res.toast();
     }
   }
 
@@ -119,7 +119,7 @@ class DynTopicController
     }
     bool isLike = this.isLike.value ?? false;
     var res = await FavHttp.likeTopic(topicId, isLike);
-    if (res['status']) {
+    if (res.isSuccess) {
       if (isLike) {
         topState.value.data!.topicItem!.like -= 1;
       } else {
@@ -127,7 +127,7 @@ class DynTopicController
       }
       this.isLike.value = !isLike;
     } else {
-      SmartDialog.showToast(res['msg']);
+      res.toast();
     }
   }
 }
