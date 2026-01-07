@@ -12,9 +12,11 @@ import 'package:PiliPlus/models_new/pgc/pgc_review/list.dart';
 import 'package:PiliPlus/pages/pgc_review/child/controller.dart';
 import 'package:PiliPlus/pages/pgc_review/post/view.dart';
 import 'package:PiliPlus/utils/accounts.dart';
+import 'package:PiliPlus/utils/extension/num_ext.dart';
 import 'package:PiliPlus/utils/extension/theme_ext.dart';
 import 'package:PiliPlus/utils/num_utils.dart';
 import 'package:PiliPlus/utils/platform_utils.dart';
+import 'package:PiliPlus/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
@@ -88,7 +90,7 @@ class _PgcReviewChildPageState extends State<PgcReviewChildPage>
         itemBuilder: (_, _) => const VideoReplySkeleton(),
         itemCount: 8,
       ),
-      Success(:var response) =>
+      Success(:final response) =>
         response != null && response.isNotEmpty
             ? SliverList.separated(
                 itemBuilder: (context, index) {
@@ -101,7 +103,7 @@ class _PgcReviewChildPageState extends State<PgcReviewChildPage>
                 separatorBuilder: (context, index) => divider,
               )
             : HttpError(onReload: _controller.onReload),
-      Error(:var errMsg) => HttpError(
+      Error(:final errMsg) => HttpError(
         errMsg: errMsg,
         onReload: _controller.onReload,
       ),
@@ -235,8 +237,9 @@ class _PgcReviewChildPageState extends State<PgcReviewChildPage>
                               ),
                             ),
                             Image.asset(
-                              'assets/images/lv/lv${item.author!.level}.png',
+                              Utils.levelName(item.author!.level!),
                               height: 11,
+                              cacheHeight: 11.cacheSize(context),
                             ),
                           ],
                         ),

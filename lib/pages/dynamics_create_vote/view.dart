@@ -143,6 +143,7 @@ class _CreateVotePageState extends State<CreateVotePage> {
                           top: 4,
                           bottom: 4,
                         ),
+                        visualDensity: .standard,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         foregroundColor: theme.colorScheme.onSurfaceVariant,
                         backgroundColor: theme.colorScheme.onInverseSurface,
@@ -320,7 +321,9 @@ class _CreateVotePageState extends State<CreateVotePage> {
               src: imgUrl,
               width: 40,
               height: 40,
-              radius: 6,
+              borderRadius: const BorderRadius.all(
+                Radius.circular(6),
+              ),
             ),
           ),
         if (showDel)
@@ -370,7 +373,12 @@ class _CreateVotePageState extends State<CreateVotePage> {
                 ..updateCanCreate(),
               child: Text(
                 '${const ['文字', '图片'][index]}投票',
-                strutStyle: const StrutStyle(forceStrutHeight: true),
+                style: const TextStyle(fontSize: 14, height: 1),
+                strutStyle: const StrutStyle(
+                  height: 1,
+                  leading: 0,
+                  fontSize: 14,
+                ),
               ),
             );
             if (isEnable) {

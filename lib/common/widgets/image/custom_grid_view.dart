@@ -77,7 +77,7 @@ class CustomGridView extends StatelessWidget {
   final bool fullScreen;
 
   static bool horizontalPreview = Pref.horizontalPreview;
-  static final _regex = RegExp(r'/(videoV|dynamicDetail)');
+  static const _routes = ['/videoV', '/dynamicDetail'];
 
   void onTap(BuildContext context, int index) {
     final imgList = picArr.map(
@@ -94,7 +94,7 @@ class CustomGridView extends StatelessWidget {
     ).toList();
     if (horizontalPreview &&
         !fullScreen &&
-        Get.currentRoute.startsWith(_regex) &&
+        _routes.contains(Get.currentRoute) &&
         !context.mediaQuerySize.isPortrait) {
       final scaffoldState = Scaffold.maybeOf(context);
       if (scaffoldState != null) {
@@ -177,13 +177,11 @@ class CustomGridView extends StatelessWidget {
           context,
         ).colorScheme.onInverseSurface.withValues(alpha: 0.4),
       ),
-      child: Center(
-        child: Image.asset(
-          'assets/images/loading.png',
-          width: imageWidth,
-          height: imageHeight,
-          cacheWidth: imageWidth.cacheSize(context),
-        ),
+      child: Image.asset(
+        'assets/images/loading.png',
+        width: imageWidth,
+        height: imageHeight,
+        cacheWidth: imageWidth.cacheSize(context),
       ),
     );
 
@@ -205,10 +203,10 @@ class CustomGridView extends StatelessWidget {
             final radius = borderRadius(column, length, index);
             return LayoutId(
               id: index,
-              child: Hero(
-                tag: item.url,
-                child: GestureDetector(
-                  onTap: () => onTap(context, index),
+              child: GestureDetector(
+                onTap: () => onTap(context, index),
+                child: Hero(
+                  tag: item.url,
                   child: Stack(
                     clipBehavior: Clip.none,
                     alignment: Alignment.center,
@@ -216,11 +214,11 @@ class CustomGridView extends StatelessWidget {
                       ClipRRect(
                         borderRadius: radius,
                         child: NetworkImgLayer(
-                          radius: 0,
+                          type: .emote,
                           src: item.url,
                           width: imageWidth,
                           height: imageHeight,
-                          isLongPic: item.isLongPic,
+                          alignment: item.isLongPic ? .topCenter : .center,
                           forceUseCacheWidth: item.width <= item.height,
                           getPlaceHolder: () => placeHolder,
                         ),

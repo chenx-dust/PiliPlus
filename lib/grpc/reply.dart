@@ -7,7 +7,7 @@ import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
 import 'package:fixnum/fixnum.dart';
 
-class ReplyGrpc {
+abstract final class ReplyGrpc {
   static bool antiGoodsReply = Pref.antiGoodsReply;
   static RegExp replyRegExp = RegExp(
     Pref.banWordForReply,
@@ -62,15 +62,14 @@ class ReplyGrpc {
       ),
       MainListReply.fromBuffer,
     );
-    if (res.isSuccess) {
-      final mainListReply = res.data;
+    if (res case Success(:final response)) {
       // keyword filter
-      if (mainListReply.hasUpTop() && needRemoveGrpc(mainListReply.upTop)) {
-        mainListReply.clearUpTop();
+      if (response.hasUpTop() && needRemoveGrpc(response.upTop)) {
+        response.clearUpTop();
       }
 
-      if (mainListReply.replies.isNotEmpty) {
-        mainListReply.replies.removeWhere((item) {
+      if (response.replies.isNotEmpty) {
+        response.replies.removeWhere((item) {
           final hasMatch = needRemoveGrpc(item);
           if (!hasMatch && item.replies.isNotEmpty) {
             item.replies.removeWhere(needRemoveGrpc);

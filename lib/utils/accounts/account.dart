@@ -1,6 +1,7 @@
 import 'package:PiliPlus/common/constants.dart';
 import 'package:PiliPlus/models/common/account_type.dart';
 import 'package:PiliPlus/utils/accounts.dart';
+import 'package:PiliPlus/utils/accounts/grpc_headers.dart';
 import 'package:PiliPlus/utils/id_utils.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:hive/hive.dart';
@@ -25,6 +26,8 @@ sealed class Account {
   Future<void> delete() => throw UnimplementedError();
 
   Map<String, String> get headers => throw UnimplementedError();
+
+  Map<String, String> get grpcHeaders => throw UnimplementedError();
 
   bool get isLogin => throw UnimplementedError();
 
@@ -64,6 +67,11 @@ class LoginAccount extends Account {
     'x-bili-mid': _midStr,
     'x-bili-aurora-eid': IdUtils.genAuroraEid(mid),
   };
+
+  @override
+  late final Map<String, String> grpcHeaders = GrpcHeaders.newHeaders(
+    accessKey,
+  );
 
   @override
   late final String csrf =
@@ -141,11 +149,16 @@ class AnonymousAccount extends Account {
   final Map<String, String> headers = Constants.baseHeaders;
 
   @override
+  final Map<String, String> grpcHeaders = GrpcHeaders.newHeaders();
+
+  @override
   bool activated = false;
 
   @override
-  Future<void> delete() =>
-      cookieJar.deleteAll().whenComplete(cookieJar.setBuvid3);
+  Future<void> delete() {
+    grpcHeaders['x-bili-fawkes-req-bin'] = GrpcHeaders.fawkes;
+    return cookieJar.deleteAll().whenComplete(cookieJar.setBuvid3);
+  }
 
   static final _instance = AnonymousAccount._();
 
@@ -173,7 +186,7 @@ extension BiliCookie on Cookie {
 extension BiliCookieJar on DefaultCookieJar {
   Map<String, String> toJson() {
     final cookies = domainCookies['bilibili.com']?['/'] ?? const {};
-    return {for (var i in cookies.values) i.cookie.name: i.cookie.value};
+    return {for (final i in cookies.values) i.cookie.name: i.cookie.value};
   }
 
   List<Cookie> toList() =>
@@ -194,7 +207,7 @@ extension BiliCookieJar on DefaultCookieJar {
       DefaultCookieJar(ignoreExpires: true)
         ..domainCookies['bilibili.com'] = {
           '/': {
-            for (var i in json.entries)
+            for (final i in json.entries)
               i.key: SerializableCookie(
                 Cookie(i.key, i.value)..setBiliDomain(),
               ),
@@ -205,7 +218,7 @@ extension BiliCookieJar on DefaultCookieJar {
       DefaultCookieJar(ignoreExpires: true)
         ..domainCookies['bilibili.com'] = {
           '/': {
-            for (var i in cookies)
+            for (final i in cookies)
               i['name']!: SerializableCookie(
                 Cookie(i['name']!, i['value']!)..setBiliDomain(),
               ),

@@ -12,7 +12,6 @@ import 'package:PiliPlus/common/widgets/pair.dart';
 import 'package:PiliPlus/common/widgets/progress_bar/audio_video_progress_bar.dart';
 import 'package:PiliPlus/common/widgets/progress_bar/segment_progress_bar.dart';
 import 'package:PiliPlus/common/widgets/view_safe_area.dart';
-import 'package:PiliPlus/http/init.dart';
 import 'package:PiliPlus/models/common/sponsor_block/action_type.dart';
 import 'package:PiliPlus/models/common/sponsor_block/post_segment_model.dart';
 import 'package:PiliPlus/models/common/sponsor_block/segment_type.dart';
@@ -23,7 +22,6 @@ import 'package:PiliPlus/models_new/video/video_detail/episode.dart' as ugc;
 import 'package:PiliPlus/models_new/video/video_detail/episode.dart';
 import 'package:PiliPlus/models_new/video/video_detail/section.dart';
 import 'package:PiliPlus/models_new/video/video_detail/ugc_season.dart';
-import 'package:PiliPlus/models_new/video/video_shot/data.dart';
 import 'package:PiliPlus/pages/common/common_intro_controller.dart';
 import 'package:PiliPlus/pages/danmaku/danmaku_model.dart';
 import 'package:PiliPlus/pages/live_room/widgets/bottom_control.dart'
@@ -49,6 +47,7 @@ import 'package:PiliPlus/plugin/pl_player/widgets/forward_seek.dart';
 import 'package:PiliPlus/plugin/pl_player/widgets/mpv_convert_webp.dart';
 import 'package:PiliPlus/plugin/pl_player/widgets/play_pause_btn.dart';
 import 'package:PiliPlus/utils/duration_utils.dart';
+import 'package:PiliPlus/utils/extension/num_ext.dart';
 import 'package:PiliPlus/utils/extension/theme_ext.dart';
 import 'package:PiliPlus/utils/id_utils.dart';
 import 'package:PiliPlus/utils/image_utils.dart';
@@ -59,7 +58,6 @@ import 'package:PiliPlus/utils/storage_key.dart';
 import 'package:PiliPlus/utils/utils.dart';
 import 'package:canvas_danmaku/canvas_danmaku.dart';
 import 'package:collection/collection.dart';
-import 'package:dio/dio.dart';
 import 'package:easy_debounce/easy_throttle.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/foundation.dart';
@@ -69,7 +67,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:get/get.dart' hide ContextExtensionss;
+import 'package:get/get.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:screen_brightness/screen_brightness.dart';
@@ -180,6 +178,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
         animationController.reverse();
       }
     });
+    transformationController = TransformationController();
     animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 100),
@@ -536,8 +535,8 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
             final List<SectionItem> sections = videoDetail.ugcSeason!.sections!;
             for (int i = 0; i < sections.length; i++) {
               final List<EpisodeItem> episodesList = sections[i].episodes!;
-              for (int j = 0; j < episodesList.length; j++) {
-                if (episodesList[j].cid == plPlayerController.cid) {
+              for (final item in episodesList) {
+                if (item.cid == currentCid) {
                   index = i;
                   episodes = episodesList;
                   break;
@@ -912,7 +911,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
 
   bool get isFullScreen => plPlayerController.isFullScreen.value;
 
-  late final transformationController = TransformationController();
+  late final TransformationController transformationController;
 
   late ColorScheme colorScheme;
   late double maxWidth;
@@ -1197,17 +1196,21 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
     final ctr = plPlayerController.danmakuController;
     if (ctr != null) {
       final pos = details.localPosition;
-      final item = ctr.findSingleDanmaku(pos);
-      if (item == null) {
+      final res = ctr.findSingleDanmaku(pos);
+      if (res != null) {
+        final (dy, item) = res;
+        if (item != _suspendedDm) {
+          _suspendedDm?.suspend = false;
+          if (item.content.extra == null) {
+            _dmOffset.value = null;
+            return;
+          }
+          _suspendedDm = item..suspend = true;
+          this.dy = dy;
+        }
+      } else {
         _suspendedDm?.suspend = false;
         _dmOffset.value = null;
-      } else if (item != _suspendedDm) {
-        _suspendedDm?.suspend = false;
-        if (item.content.extra == null) {
-          _dmOffset.value = null;
-          return;
-        }
-        _suspendedDm = item..suspend = true;
       }
     }
   }
@@ -1844,6 +1847,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
             plPlayerController,
             maxWidth,
             maxHeight,
+            () => mounted,
           ),
 
         if (isFullScreen || plPlayerController.isDesktopPip) ...[
@@ -1948,6 +1952,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
                       Image.asset(
                         'assets/images/loading.webp',
                         height: 25,
+                        cacheHeight: 25.cacheSize(context),
                         semanticLabel: "加载中",
                         color: Colors.white,
                       ),
@@ -2099,7 +2104,6 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
                 return Transform.flip(
                   flipX: plPlayerController.flipX.value,
                   flipY: plPlayerController.flipY.value,
-                  filterQuality: FilterQuality.low,
                   child: FittedBox(
                     fit: videoFit.boxFit,
                     alignment: widget.alignment,
@@ -2147,8 +2151,9 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
     WebpPreset preset = WebpPreset.def;
 
     final success =
-        await Get.dialog<bool>(
-          AlertDialog(
+        await showDialog<bool>(
+          context: Get.context!,
+          builder: (context) => AlertDialog(
             title: const Text('动态截图'),
             content: Column(
               spacing: 12,
@@ -2265,6 +2270,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
   static const _actionItemHeight = 35.0 - _triangleHeight;
 
   DanmakuItem<DanmakuExtra>? _suspendedDm;
+  late double dy = 0;
   late final Rxn<Offset> _dmOffset = Rxn<Offset>();
 
   void _removeDmAction() {
@@ -2323,9 +2329,6 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
 
     final overlayWidth = _actionItemWidth * (seekOffset == null ? 3 : 4);
 
-    final dy = item.content.type == DanmakuItemType.bottom
-        ? maxHeight - item.yPosition - item.height
-        : item.yPosition;
     final top = dy + item.height + _triangleHeight + 2;
 
     final realLeft = dx + overlayWidth / 2;
@@ -2468,7 +2471,6 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
                         .roomId,
                     msg: item.content.text,
                     extra: extra,
-                    ctr: plPlayerController,
                   ),
                 ),
               ],
@@ -2535,6 +2537,7 @@ Widget buildSeekPreviewWidget(
   PlPlayerController plPlayerController,
   double maxWidth,
   double maxHeight,
+  ValueGetter<bool> isMounted,
 ) {
   return Obx(
     () {
@@ -2543,7 +2546,7 @@ Widget buildSeekPreviewWidget(
       }
 
       try {
-        VideoShotData data = plPlayerController.videoShot!.data;
+        final data = plPlayerController.videoShot!.data;
 
         final double scale =
             plPlayerController.isFullScreen.value &&
@@ -2585,20 +2588,18 @@ Widget buildSeekPreviewWidget(
                   imgXSize: imgXSize,
                   imgYSize: imgYSize,
                   height: height,
-                  image: plPlayerController.previewCache?[url]?.target,
-                  onCacheImg: (img) =>
-                      (plPlayerController.previewCache ??= {})[url] ??=
-                          WeakReference(img),
+                  imageCache: plPlayerController.previewCache,
                   onSetSize: (xSize, ySize) => data
                     ..imgXSize = imgXSize = xSize
                     ..imgYSize = imgYSize = ySize,
+                  isMounted: isMounted,
                 ),
               );
             },
           ),
         );
       } catch (e) {
-        if (kDebugMode) debugPrint('seek preview: $e');
+        if (kDebugMode) rethrow;
         return const SizedBox.shrink();
       }
     },
@@ -2608,26 +2609,26 @@ Widget buildSeekPreviewWidget(
 class VideoShotImage extends StatefulWidget {
   const VideoShotImage({
     super.key,
-    this.image,
+    required this.imageCache,
     required this.url,
     required this.x,
     required this.y,
     required this.imgXSize,
     required this.imgYSize,
     required this.height,
-    required this.onCacheImg,
     required this.onSetSize,
+    required this.isMounted,
   });
 
-  final ui.Image? image;
+  final Map<String, ui.Image?> imageCache;
   final String url;
   final int x;
   final int y;
   final double imgXSize;
   final double imgYSize;
   final double height;
-  final ValueChanged<ui.Image> onCacheImg;
   final Function(double imgXSize, double imgYSize) onSetSize;
+  final ValueGetter<bool> isMounted;
 
   @override
   State<VideoShotImage> createState() => _VideoShotImageState();
@@ -2636,26 +2637,22 @@ class VideoShotImage extends StatefulWidget {
 Future<ui.Image?> _getImg(String url) async {
   final cacheManager = DefaultCacheManager();
   final cacheKey = Utils.getFileName(url, fileExt: false);
-  final fileInfo = await cacheManager.getFileFromCache(cacheKey);
-  if (fileInfo != null) {
-    final bytes = await fileInfo.file.readAsBytes();
-    return _loadImg(bytes);
-  } else {
-    final res = await Request().get<Uint8List>(
+  try {
+    final fileInfo = await cacheManager.getSingleFile(
       url,
-      options: Options(responseType: ResponseType.bytes),
+      key: cacheKey,
+      headers: Constants.baseHeaders,
     );
-    if (res.statusCode == 200) {
-      final Uint8List data = res.data;
-      cacheManager.putFile(cacheKey, data, fileExtension: 'jpg');
-      return _loadImg(data);
-    }
+    return _loadImg(fileInfo.path);
+  } catch (_) {
+    return null;
   }
-  return null;
 }
 
-Future<ui.Image?> _loadImg(Uint8List bytes) async {
-  final codec = await ui.instantiateImageCodec(bytes);
+Future<ui.Image?> _loadImg(String path) async {
+  final codec = await ui.instantiateImageCodecFromBuffer(
+    await ImmutableBuffer.fromFilePath(path),
+  );
   final frame = await codec.getNextFrame();
   codec.dispose();
   return frame.image;
@@ -2705,19 +2702,27 @@ class _VideoShotImageState extends State<VideoShotImage> {
     _rrect = RRect.fromRectAndRadius(_dstRect, const Radius.circular(10));
   }
 
-  Future<void> _loadImg() async {
-    _image = widget.image;
+  void _loadImg() {
+    final url = widget.url;
+    _image = widget.imageCache[url];
     if (_image != null) {
       _initSizeIfNeeded();
-      setState(() {});
-    } else {
-      final image = await _getImg(widget.url);
-      if (mounted && image != null) {
-        _image = image;
-        widget.onCacheImg(image);
-        _initSizeIfNeeded();
-        setState(() {});
-      }
+    } else if (!widget.imageCache.containsKey(url)) {
+      widget.imageCache[url] = null;
+      _getImg(url).then((image) {
+        if (image != null) {
+          if (widget.isMounted()) {
+            widget.imageCache[url] = image;
+          }
+          if (mounted) {
+            _image = image;
+            _initSizeIfNeeded();
+            setState(() {});
+          }
+        } else {
+          widget.imageCache.remove(url);
+        }
+      });
     }
   }
 
@@ -2816,7 +2821,7 @@ Widget buildViewPointWidget(
           }
           // if (kDebugMode) debugPrint('${item.title},,${item.from}');
         } catch (e) {
-          if (kDebugMode) debugPrint('$e');
+          if (kDebugMode) rethrow;
         }
       },
     ),

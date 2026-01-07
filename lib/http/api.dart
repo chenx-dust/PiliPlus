@@ -1,6 +1,6 @@
 import 'package:PiliPlus/http/constants.dart';
 
-class Api {
+abstract final class Api {
   // 推荐视频
   static const String recommendListApp =
       '${HttpString.appBaseUrl}/x/v2/feed/index';
@@ -978,4 +978,12 @@ class Api {
 
   static const String followeeVotes =
       '${HttpString.tUrl}/vote_svr/v1/vote_svr/followee_votes';
+
+  static const String liveContributionRank =
+      '${HttpString.liveBaseUrl}/xlive/general-interface/v1/rank/queryContributionRank';
+
+  static const String superChatReport =
+      '${HttpString.liveBaseUrl}/av/v1/SuperChat/report';
+
+  static const String imMsgReport = '${HttpString.tUrl}/x/bplus/im/report/add';
 }

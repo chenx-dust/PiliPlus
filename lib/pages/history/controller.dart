@@ -78,7 +78,7 @@ class HistoryController
 
   // 观看历史暂停状态
   Future<void> historyStatus() async {
-    var res = await UserHttp.historyStatus(account: account);
+    final res = await UserHttp.historyStatus(account: account);
     if (res case Success(:final response)) {
       baseCtr.pauseStatus.value = response;
       GStorage.localCache.put(LocalCacheKey.historyPause, response);
@@ -106,18 +106,18 @@ class HistoryController
 
   Future<void> _onDelete(Set<HistoryItemModel> removeList) async {
     SmartDialog.showLoading(msg: '请求中');
-    final response = await UserHttp.delHistory(
+    final res = await UserHttp.delHistory(
       removeList
           .map((item) => '${item.history.business}_${item.kid}')
           .join(','),
       account: account,
     );
     SmartDialog.dismiss();
-    if (response.isSuccess) {
+    if (res.isSuccess) {
       afterDelete(removeList);
       SmartDialog.showToast('已删除');
     } else {
-      response.toast();
+      res.toast();
     }
   }
 

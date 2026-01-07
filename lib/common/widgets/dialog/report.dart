@@ -10,8 +10,9 @@ Future<void> autoWrapReportDialog(
   BuildContext context,
   Map<String, Map<int, String>> options,
   Future<LoadingState> Function(int reasonType, String? reasonDesc, bool banUid)
-  onSuccess,
-) {
+  onSuccess, {
+  bool ban = true,
+}) {
   int? reasonType;
   String? reasonDesc;
   bool banUid = false;
@@ -20,7 +21,6 @@ Future<void> autoWrapReportDialog(
     context: context,
     builder: (context) {
       return AlertDialog(
-        constraints: const BoxConstraints(minWidth: 280, maxWidth: 420),
         title: const Text('举报'),
         titlePadding: const .only(left: 22, top: 16, right: 22),
         contentPadding: const .symmetric(vertical: 5),
@@ -70,6 +70,8 @@ Future<void> autoWrapReportDialog(
                                 labelText: '为帮助审核人员更快处理，请补充问题类型和出现位置等详细信息',
                                 border: OutlineInputBorder(),
                                 contentPadding: .all(10),
+                                labelStyle: TextStyle(fontSize: 14),
+                                floatingLabelStyle: TextStyle(fontSize: 14),
                               ),
                               onChanged: (value) => reasonDesc = value,
                               validator: (value) =>
@@ -82,13 +84,14 @@ Future<void> autoWrapReportDialog(
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.only(left: 14, top: 6),
-              child: CheckBoxText(
-                text: '拉黑该用户',
-                onChanged: (value) => banUid = value,
+            if (ban)
+              Padding(
+                padding: const EdgeInsets.only(left: 14, top: 6),
+                child: CheckBoxText(
+                  text: '拉黑该用户',
+                  onChanged: (value) => banUid = value,
+                ),
               ),
-            ),
           ],
         ),
         actions: [
@@ -249,6 +252,18 @@ abstract final class ReportOptions {
       5: '政治敏感',
       6: '青少年不良信息',
       7: '其他', // avoid show form
+    },
+  };
+
+  static Map<String, Map<int, String>> get imMsgReport => const {
+    '': {
+      1: '色情低俗',
+      2: '政治敏感',
+      3: '违法有害',
+      4: '广告骚扰',
+      5: '人身攻击',
+      6: '诈骗',
+      0: '其他问题',
     },
   };
 }

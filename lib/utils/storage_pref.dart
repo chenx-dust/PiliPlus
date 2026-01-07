@@ -10,6 +10,7 @@ import 'package:PiliPlus/models/common/member/tab_type.dart';
 import 'package:PiliPlus/models/common/msg/msg_unread_type.dart';
 import 'package:PiliPlus/models/common/sponsor_block/segment_type.dart';
 import 'package:PiliPlus/models/common/sponsor_block/skip_type.dart';
+import 'package:PiliPlus/models/common/super_chat_type.dart';
 import 'package:PiliPlus/models/common/super_resolution_type.dart';
 import 'package:PiliPlus/models/common/theme/theme_type.dart';
 import 'package:PiliPlus/models/common/video/audio_quality.dart';
@@ -33,11 +34,11 @@ import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/storage_key.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart' hide ContextExtensionss;
+import 'package:get/get.dart';
 import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
 
-abstract class Pref {
+abstract final class Pref {
   static final Box _setting = GStorage.setting;
   static final Box _video = GStorage.video;
   static final Box _localCache = GStorage.localCache;
@@ -324,6 +325,12 @@ abstract class Pref {
   static bool get danmakuMassiveMode =>
       _setting.get(SettingBoxKey.danmakuMassiveMode, defaultValue: false);
 
+  static bool get danmakuFixedV =>
+      _setting.get(SettingBoxKey.danmakuFixedV, defaultValue: false);
+
+  static bool get danmakuStatic2Scroll =>
+      _setting.get(SettingBoxKey.danmakuStatic2Scroll, defaultValue: false);
+
   static double get subtitleFontScale =>
       _setting.get(SettingBoxKey.subtitleFontScale, defaultValue: 1.0);
 
@@ -460,6 +467,7 @@ abstract class Pref {
       _setting.get(SettingBoxKey.enableCommAntifraud, defaultValue: false);
 
   static bool get biliSendCommAntifraud =>
+      Platform.isAndroid &&
       _setting.get(SettingBoxKey.biliSendCommAntifraud, defaultValue: false);
 
   static bool get enableCreateDynAntifraud =>
@@ -663,7 +671,7 @@ abstract class Pref {
 
   static bool get dynamicColor =>
       !Platform.isIOS &&
-      _setting.get(SettingBoxKey.dynamicColor, defaultValue: !Platform.isIOS);
+      _setting.get(SettingBoxKey.dynamicColor, defaultValue: true);
 
   static bool get autoClearCache =>
       _setting.get(SettingBoxKey.autoClearCache, defaultValue: false);
@@ -731,11 +739,11 @@ abstract class Pref {
   static double get danmakuStaticDuration =>
       _setting.get(SettingBoxKey.danmakuStaticDuration, defaultValue: 4.0);
 
-  static double get strokeWidth =>
-      _setting.get(SettingBoxKey.strokeWidth, defaultValue: 1.5);
+  static double get danmakuStrokeWidth =>
+      _setting.get(SettingBoxKey.danmakuStrokeWidth, defaultValue: 1.5);
 
-  static int get fontWeight =>
-      _setting.get(SettingBoxKey.fontWeight, defaultValue: 5);
+  static int get danmakuFontWeight =>
+      _setting.get(SettingBoxKey.danmakuFontWeight, defaultValue: 5);
 
   static bool get enableLongShowControl =>
       _setting.get(SettingBoxKey.enableLongShowControl, defaultValue: false);
@@ -838,8 +846,11 @@ abstract class Pref {
   static bool get showMemberShop =>
       _setting.get(SettingBoxKey.showMemberShop, defaultValue: false);
 
-  static bool get showSuperChat =>
-      _setting.get(SettingBoxKey.showSuperChat, defaultValue: true);
+  static SuperChatType get superChatType =>
+      SuperChatType.values[_setting.get(
+        SettingBoxKey.superChatType,
+        defaultValue: SuperChatType.valid.index,
+      )];
 
   static bool get minimizeOnExit =>
       _setting.get(SettingBoxKey.minimizeOnExit, defaultValue: true);

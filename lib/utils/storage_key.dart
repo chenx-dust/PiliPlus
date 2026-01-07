@@ -1,6 +1,6 @@
 // ignore_for_file: constant_identifier_names
 
-abstract class SettingBoxKey {
+abstract final class SettingBoxKey {
   static const String btmProgressBehavior = 'btmProgressBehavior',
       defaultVideoQa = 'defaultVideoQa',
       defaultVideoQaCellular = 'defaultVideoQaCellular',
@@ -22,7 +22,7 @@ abstract class SettingBoxKey {
       enableAutoEnter = 'enableAutoEnter',
       enableAutoExit = 'enableAutoExit',
       enableOnlineTotal = 'enableOnlineTotal',
-      showSuperChat = 'showSuperChat',
+      superChatType = 'superChatType',
       keyboardControl = 'keyboardControl',
       pauseOnMinimize = 'pauseOnMinimize',
       pgcSkipType = 'pgcSkipType',
@@ -192,9 +192,11 @@ abstract class SettingBoxKey {
       danmakuDuration = 'danmakuDuration',
       danmakuStaticDuration = 'danmakuStaticDuration',
       danmakuMassiveMode = 'danmakuMassiveMode',
+      danmakuFixedV = 'danmakuFixedV',
+      danmakuStatic2Scroll = 'danmakuStatic2Scroll',
       danmakuLineHeight = 'danmakuLineHeight',
-      strokeWidth = 'strokeWidth',
-      fontWeight = 'fontWeight';
+      danmakuStrokeWidth = 'strokeWidth',
+      danmakuFontWeight = 'fontWeight';
 
   static const String systemProxyHost = 'systemProxyHost',
       systemProxyPort = 'systemProxyPort';
@@ -228,7 +230,7 @@ abstract class SettingBoxKey {
       liveCdnUrl = 'liveCdnUrl';
 }
 
-abstract class LocalCacheKey {
+abstract final class LocalCacheKey {
   static const String historyPause = 'historyPause',
       blackMids = 'blackMids',
       danmakuFilterRules = 'danmakuFilterRules',
@@ -237,7 +239,7 @@ abstract class LocalCacheKey {
       buvid = 'buvid';
 }
 
-abstract class VideoBoxKey {
+abstract final class VideoBoxKey {
   static const String playRepeat = 'playRepeat',
       playSpeedDefault = 'playSpeedDefault',
       longPressSpeedDefault = 'longPressSpeedDefault',

@@ -15,6 +15,8 @@ import 'package:PiliPlus/utils/app_scheme.dart';
 import 'package:PiliPlus/utils/cache_manager.dart';
 import 'package:PiliPlus/utils/calc_window_position.dart';
 import 'package:PiliPlus/utils/date_utils.dart';
+import 'package:PiliPlus/utils/extension/iterable_ext.dart';
+import 'package:PiliPlus/utils/extension/theme_ext.dart';
 import 'package:PiliPlus/utils/json_file_handler.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
 import 'package:PiliPlus/utils/path_utils.dart';
@@ -228,7 +230,7 @@ class MyApp extends StatelessWidget {
       return;
     }
 
-    if (Get.isDialogOpen ?? Get.isBottomSheetOpen ?? false) {
+    if (Get.routing.route is! GetPageRoute) {
       Get.back();
       return;
     }
@@ -267,24 +269,14 @@ class MyApp extends StatelessWidget {
       theme: ThemeUtils.getThemeData(
         colorScheme: dynamicColor
             ? _light!
-            : SeedColorScheme.fromSeeds(
-                variant: variant,
-                primaryKey: brandColor,
-                brightness: Brightness.light,
-                useExpressiveOnContainerColors: false,
-              ),
+            : brandColor.asColorSchemeSeed(variant, .light),
         isDynamic: dynamicColor,
       ),
       darkTheme: ThemeUtils.getThemeData(
         isDark: true,
         colorScheme: dynamicColor
             ? _dark!
-            : SeedColorScheme.fromSeeds(
-                variant: variant,
-                primaryKey: brandColor,
-                brightness: Brightness.dark,
-                useExpressiveOnContainerColors: false,
-              ),
+            : brandColor.asColorSchemeSeed(variant, .dark),
         isDynamic: dynamicColor,
       ),
       themeMode: Pref.themeMode,
@@ -348,8 +340,8 @@ class MyApp extends StatelessWidget {
   }
 
   /// from [DynamicColorBuilderState.initPlatformState]
-  static Future<void> initPlatformState() async {
-    if (_light != null || _dark != null) return;
+  static Future<bool> initPlatformState() async {
+    if (_light != null || _dark != null) return true;
     // Platform messages may fail, so we use a try/catch PlatformException.
     try {
       final corePalette = await DynamicColorPlugin.getCorePalette();
@@ -360,7 +352,7 @@ class MyApp extends StatelessWidget {
         }
         _light = corePalette.toColorScheme();
         _dark = corePalette.toColorScheme(brightness: Brightness.dark);
-        return;
+        return true;
       }
     } on PlatformException {
       if (kDebugMode) {
@@ -375,15 +367,10 @@ class MyApp extends StatelessWidget {
         if (kDebugMode) {
           debugPrint('dynamic_color: Accent color detected.');
         }
-        _light = ColorScheme.fromSeed(
-          seedColor: accentColor,
-          brightness: Brightness.light,
-        );
-        _dark = ColorScheme.fromSeed(
-          seedColor: accentColor,
-          brightness: Brightness.dark,
-        );
-        return;
+        final variant = FlexSchemeVariant.values[Pref.schemeVariant];
+        _light = accentColor.asColorSchemeSeed(variant, .light);
+        _dark = accentColor.asColorSchemeSeed(variant, .dark);
+        return true;
       }
     } on PlatformException {
       if (kDebugMode) {
@@ -393,6 +380,8 @@ class MyApp extends StatelessWidget {
     if (kDebugMode) {
       debugPrint('dynamic_color: Dynamic color not detected on this device.');
     }
+    GStorage.setting.put(SettingBoxKey.dynamicColor, false);
+    return false;
   }
 }
 

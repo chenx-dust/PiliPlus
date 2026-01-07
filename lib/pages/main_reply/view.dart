@@ -76,6 +76,7 @@ class _MainReplyPageState extends State<MainReplyPage> {
               right: padding.right,
             ),
             child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
                 buildReplyHeader(colorScheme),
                 Obx(
@@ -117,7 +118,7 @@ class _MainReplyPageState extends State<MainReplyPage> {
         itemBuilder: (_, _) => const VideoReplySkeleton(),
         prototypeItem: const VideoReplySkeleton(),
       ),
-      Success(:var response) =>
+      Success(:final response) =>
         response != null && response.isNotEmpty
             ? SliverList.builder(
                 itemCount: response.length + 1,

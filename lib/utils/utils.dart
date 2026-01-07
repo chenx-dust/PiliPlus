@@ -14,12 +14,24 @@ import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
 import 'package:share_plus/share_plus.dart';
 
-abstract class Utils {
+abstract final class Utils {
   static final random = Random();
 
   static const channel = MethodChannel(Constants.appName);
 
   static const jsonEncoder = JsonEncoder.withIndent('    ');
+
+  static String levelName(
+    Object level, {
+    bool isSeniorMember = false,
+  }) => 'assets/images/lv/lv${isSeniorMember ? '6_s' : level}.png';
+
+  static Color index2Color(int index, Color color) => switch (index) {
+    0 => const Color(0xFFfdad13),
+    1 => const Color(0xFF8aace1),
+    2 => const Color(0xFFdfa777),
+    _ => color,
+  };
 
   static String themeUrl(bool isDark) =>
       'native.theme=${isDark ? 2 : 1}&night=${isDark ? 1 : 0}';

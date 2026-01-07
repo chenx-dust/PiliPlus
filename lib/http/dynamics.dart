@@ -25,7 +25,7 @@ import 'package:PiliPlus/utils/utils.dart';
 import 'package:PiliPlus/utils/wbi_sign.dart';
 import 'package:dio/dio.dart';
 
-class DynamicsHttp {
+abstract final class DynamicsHttp {
   @pragma('vm:notify-debugger-on-exception')
   static Future<LoadingState<DynamicsDataModel>> followDynamic({
     DynamicsTabType type = DynamicsTabType.all,
@@ -43,8 +43,8 @@ class DynamicsHttp {
       'offset': offset,
       'features': 'itemOpusStyle,listOnlyfans',
     };
-    var res = await Request().get(Api.followDynamic, queryParameters: data);
-    var code = res.data['code'];
+    final res = await Request().get(Api.followDynamic, queryParameters: data);
+    final code = res.data['code'];
     if (code == 0) {
       try {
         DynamicsDataModel data = DynamicsDataModel.fromJson(
@@ -70,7 +70,7 @@ class DynamicsHttp {
   }
 
   static Future<LoadingState<FollowUpModel>> followUp() async {
-    var res = await Request().get(
+    final res = await Request().get(
       Api.followUp,
       queryParameters: {
         'up_list_more': 1,
@@ -85,7 +85,7 @@ class DynamicsHttp {
   }
 
   static Future<LoadingState<DynUpList>> dynUpList(String? offset) async {
-    var res = await Request().get(
+    final res = await Request().get(
       Api.dynUplist,
       queryParameters: {
         'offset': offset,
@@ -105,7 +105,7 @@ class DynamicsHttp {
   //   required String? dynamicId,
   //   required int? up,
   // }) async {
-  //   var res = await Request().post(
+  //   final res = await Request().post(
   //     Api.likeDynamic,
   //     queryParameters: {
   //       'dynamic_id': dynamicId,
@@ -128,7 +128,7 @@ class DynamicsHttp {
     required String? dynamicId,
     required int? up,
   }) async {
-    var res = await Request().post(
+    final res = await Request().post(
       Api.thumbDynamic,
       queryParameters: {
         'csrf': Accounts.main.csrf,
@@ -166,7 +166,7 @@ class DynamicsHttp {
     String? title,
     Map? attachCard,
   }) async {
-    var res = await Request().post(
+    final res = await Request().post(
       Api.createDynamic,
       queryParameters: {
         'platform': 'web',
@@ -251,7 +251,7 @@ class DynamicsHttp {
     dynamic type,
     bool clearCookie = false,
   }) async {
-    var res = await Request().get(
+    final res = await Request().get(
       Api.dynamicDetail,
       queryParameters: {
         'timezone_offset': -480,
@@ -281,7 +281,7 @@ class DynamicsHttp {
   static Future<LoadingState<Null>> setTop({
     required Object dynamicId,
   }) async {
-    var res = await Request().post(
+    final res = await Request().post(
       Api.setTopDyn,
       queryParameters: {
         'csrf': Accounts.main.csrf,
@@ -300,7 +300,7 @@ class DynamicsHttp {
   static Future<LoadingState<Null>> rmTop({
     required Object dynamicId,
   }) async {
-    var res = await Request().post(
+    final res = await Request().post(
       Api.rmTopDyn,
       queryParameters: {
         'csrf': Accounts.main.csrf,
@@ -319,7 +319,7 @@ class DynamicsHttp {
   static Future<LoadingState<ArticleInfoData>> articleInfo({
     required Object cvId,
   }) async {
-    var res = await Request().get(
+    final res = await Request().get(
       Api.articleInfo,
       queryParameters: await WbiSign.makSign({
         'id': cvId,
@@ -483,7 +483,7 @@ class DynamicsHttp {
     required Object dynamicIdStr,
     required Object? reserveTotal,
   }) async {
-    var res = await Request().post(
+    final res = await Request().post(
       Api.dynReserve,
       queryParameters: {
         'csrf': Accounts.main.csrf,

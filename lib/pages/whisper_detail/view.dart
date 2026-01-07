@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io' show File;
 
+import 'package:PiliPlus/common/widgets/dialog/report.dart';
 import 'package:PiliPlus/common/widgets/flutter/text_field/text_field.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/loading_widget.dart';
@@ -16,6 +17,7 @@ import 'package:PiliPlus/pages/whisper_detail/widget/chat_item.dart';
 import 'package:PiliPlus/pages/whisper_link_setting/view.dart';
 import 'package:PiliPlus/utils/extension/file_ext.dart';
 import 'package:PiliPlus/utils/extension/iterable_ext.dart';
+import 'package:PiliPlus/utils/extension/num_ext.dart';
 import 'package:PiliPlus/utils/extension/widget_ext.dart';
 import 'package:PiliPlus/utils/feed_back.dart';
 import 'package:PiliPlus/utils/platform_utils.dart';
@@ -55,25 +57,6 @@ class _WhisperDetailPageState
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        leading: Center(
-          child: SizedBox(
-            width: 34,
-            height: 34,
-            child: IconButton(
-              tooltip: '返回',
-              style: IconButton.styleFrom(
-                padding: EdgeInsets.zero,
-                backgroundColor: theme.colorScheme.secondaryContainer,
-              ),
-              onPressed: Get.back,
-              icon: Icon(
-                Icons.arrow_back_outlined,
-                size: 18,
-                color: theme.colorScheme.onSecondaryContainer,
-              ),
-            ),
-          ),
-        ),
         title: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () {
@@ -110,6 +93,7 @@ class _WhisperDetailPageState
                 Image.asset(
                   'assets/images/live/live.gif',
                   height: 16,
+                  cacheHeight: 16.cacheSize(context),
                   filterQuality: FilterQuality.low,
                 ),
               ],
@@ -118,18 +102,19 @@ class _WhisperDetailPageState
         ),
         actions: [
           IconButton(
+            tooltip: '设置',
             onPressed: () => Get.to(
               WhisperLinkSettingPage(
                 talkerUid: _whisperDetailController.talkerId,
               ),
             ),
             icon: Icon(
-              size: 20,
+              size: 22,
               Icons.settings,
               color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 5),
         ],
       ),
       body: Padding(
@@ -168,7 +153,7 @@ class _WhisperDetailPageState
   Widget _buildBody(LoadingState<List<Msg>?> loadingState) {
     return switch (loadingState) {
       Loading() => loadingWidget,
-      Success(:var response) =>
+      Success(:final response) =>
         response != null && response.isNotEmpty
             ? ListView.separated(
                 shrinkWrap: true,
@@ -184,55 +169,111 @@ class _WhisperDetailPageState
                     _whisperDetailController.onLoadMore();
                   }
                   final item = response[index];
+                  final isOwner =
+                      item.senderUid.toInt() ==
+                      _whisperDetailController.account.mid;
                   return ChatItem(
                     item: item,
                     eInfos: _whisperDetailController.eInfos,
-                    onLongPress:
-                        item.senderUid.toInt() ==
-                            _whisperDetailController.account.mid
-                        ? () => onLongPress(index, item)
+                    onLongPress: () => onLongPress(index, item, isOwner),
+                    onSecondaryTapUp: PlatformUtils.isDesktop
+                        ? (e) =>
+                              _showMenu(e.globalPosition, index, item, isOwner)
                         : null,
+                    isOwner: isOwner,
                   );
                 },
                 separatorBuilder: (context, index) =>
                     const SizedBox(height: 12),
               )
             : scrollErrorWidget(onReload: _whisperDetailController.onReload),
-      Error(:var errMsg) => scrollErrorWidget(
+      Error(:final errMsg) => scrollErrorWidget(
         errMsg: errMsg,
         onReload: _whisperDetailController.onReload,
       ),
     };
   }
 
-  void onLongPress(int index, Msg item) {
+  void _showMenu(Offset offset, int index, Msg item, bool isOwner) {
+    showMenu(
+      context: context,
+      position: .fromLTRB(offset.dx, offset.dy, offset.dx, 0),
+      items: [
+        if (isOwner)
+          PopupMenuItem(
+            height: 42,
+            onTap: () => _whisperDetailController.sendMsg(
+              message: '${item.msgKey}',
+              onClearText: editController.clear,
+              msgType: 5,
+              index: index,
+            ),
+            child: const Text('撤回', style: TextStyle(fontSize: 14)),
+          )
+        else
+          PopupMenuItem(
+            height: 42,
+            onTap: () => autoWrapReportDialog(
+              context,
+              ban: false,
+              ReportOptions.imMsgReport,
+              (reasonType, reasonDesc, banUid) =>
+                  _whisperDetailController.onReport(
+                    item,
+                    reasonType,
+                    reasonType == 0
+                        ? reasonDesc!
+                        : ReportOptions.imMsgReport['']![reasonType]!,
+                  ),
+            ),
+            child: const Text('举报', style: TextStyle(fontSize: 14)),
+          ),
+      ],
+    );
+  }
+
+  void onLongPress(int index, Msg item, bool isOwner) {
+    Feedback.forLongPress(context);
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           clipBehavior: Clip.hardEdge,
           contentPadding: const EdgeInsets.symmetric(vertical: 12),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                onTap: () {
-                  Get.back();
-                  _whisperDetailController.sendMsg(
-                    message: '${item.msgKey}',
-                    onClearText: editController.clear,
-                    msgType: 5,
-                    index: index,
-                  );
-                },
-                dense: true,
-                title: const Text(
-                  '撤回',
-                  style: TextStyle(fontSize: 14),
+          content: isOwner
+              ? ListTile(
+                  onTap: () {
+                    Get.back();
+                    _whisperDetailController.sendMsg(
+                      message: '${item.msgKey}',
+                      onClearText: editController.clear,
+                      msgType: 5,
+                      index: index,
+                    );
+                  },
+                  dense: true,
+                  title: const Text('撤回', style: TextStyle(fontSize: 14)),
+                )
+              : ListTile(
+                  onTap: () {
+                    Get.back();
+                    autoWrapReportDialog(
+                      context,
+                      ban: false,
+                      ReportOptions.imMsgReport,
+                      (reasonType, reasonDesc, banUid) =>
+                          _whisperDetailController.onReport(
+                            item,
+                            reasonType,
+                            reasonType == 0
+                                ? reasonDesc!
+                                : ReportOptions.imMsgReport['']![reasonType]!,
+                          ),
+                    );
+                  },
+                  dense: true,
+                  title: const Text('举报', style: TextStyle(fontSize: 14)),
                 ),
-              ),
-            ],
-          ),
         );
       },
     );
@@ -375,9 +416,7 @@ class _WhisperDetailPageState
   }
 
   @override
-  Future<void> onMention([bool fromClick = false]) {
-    return Future.syncValue(null);
-  }
+  Future<void>? onMention([bool fromClick = false]) => null;
 
   @override
   void onSave() {}

@@ -13,7 +13,6 @@ import 'package:PiliPlus/http/video.dart';
 import 'package:PiliPlus/models/common/video/source_type.dart';
 import 'package:PiliPlus/models_new/member_card_info/data.dart';
 import 'package:PiliPlus/models_new/video/video_ai_conclusion/model_result.dart';
-import 'package:PiliPlus/models_new/video/video_detail/data.dart';
 import 'package:PiliPlus/models_new/video/video_detail/episode.dart';
 import 'package:PiliPlus/models_new/video/video_detail/page.dart';
 import 'package:PiliPlus/models_new/video/video_detail/section.dart';
@@ -28,7 +27,7 @@ import 'package:PiliPlus/pages/video/reply/controller.dart';
 import 'package:PiliPlus/plugin/pl_player/models/play_repeat.dart';
 import 'package:PiliPlus/services/service_locator.dart';
 import 'package:PiliPlus/utils/accounts.dart';
-import 'package:PiliPlus/utils/extension/iterable_ext.dart';
+import 'package:PiliPlus/utils/extension/context_ext.dart';
 import 'package:PiliPlus/utils/extension/string_ext.dart';
 import 'package:PiliPlus/utils/feed_back.dart';
 import 'package:PiliPlus/utils/global_data.dart';
@@ -64,6 +63,8 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
 
   AiConclusionResult? aiConclusionResult;
 
+  late final Map<int?, bool> seasonFavState = {};
+
   @override
   void onInit() {
     super.onInit();
@@ -86,31 +87,34 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
   @override
   Future<void> queryVideoIntro() async {
     queryVideoTags();
-    var res = await VideoHttp.videoIntro(bvid: bvid);
-    if (res.isSuccess) {
-      VideoDetailData data = res.data;
-      videoPlayerServiceHandler?.onVideoDetailChange(data, cid.value, heroTag);
-      if (videoDetail.value.ugcSeason?.id == data.ugcSeason?.id) {
+    final res = await VideoHttp.videoIntro(bvid: bvid);
+    if (res case Success(:final response)) {
+      videoPlayerServiceHandler?.onVideoDetailChange(
+        response,
+        cid.value,
+        heroTag,
+      );
+      if (videoDetail.value.ugcSeason?.id == response.ugcSeason?.id) {
         // keep reversed season
-        data.ugcSeason = videoDetail.value.ugcSeason;
+        response.ugcSeason = videoDetail.value.ugcSeason;
       }
-      if (videoDetail.value.cid == data.cid) {
+      if (videoDetail.value.cid == response.cid) {
         // keep reversed pages
-        data
+        response
           ..pages = videoDetail.value.pages
           ..isPageReversed = videoDetail.value.isPageReversed;
       }
-      videoDetail.value = data;
+      videoDetail.value = response;
       try {
         if (videoDetailCtr.cover.value.isEmpty ||
             (videoDetailCtr.videoUrl.isNullOrEmpty &&
                 !videoDetailCtr.isQuerying)) {
-          videoDetailCtr.cover.value = data.pic ?? '';
+          videoDetailCtr.cover.value = response.pic ?? '';
         }
         if (videoDetailCtr.showReply) {
           try {
             Get.find<VideoReplyController>(tag: heroTag).count.value =
-                data.stat?.reply ?? 0;
+                response.stat?.reply ?? 0;
           } catch (_) {}
         }
       } catch (_) {}
@@ -118,7 +122,7 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
       if (pages != null && pages.isNotEmpty && cid.value == 0) {
         cid.value = pages.first.cid!;
       }
-      queryUserStat(data.staff);
+      queryUserStat(response.staff);
     } else {
       res.toast();
       status.value = false;
@@ -133,40 +137,34 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
   // 获取up主粉丝数
   Future<void> queryUserStat(List<Staff>? staff) async {
     if (staff != null && staff.isNotEmpty) {
-      Request()
-          .get(
-            Api.relations,
-            queryParameters: {'fids': staff.map((item) => item.mid).join(',')},
-          )
-          .then((res) {
-            if (res.data['code'] == 0) {
-              staffRelations.addAll({
-                'status': true,
-                if (res.data['data'] != null) ...res.data['data'],
-              });
-            }
-          });
+      final res = await Request().get(
+        Api.relations,
+        queryParameters: {'fids': staff.map((item) => item.mid).join(',')},
+      );
+      if (res.data['code'] == 0) {
+        staffRelations.addAll({'status': true, ...?res.data['data']});
+      }
     } else {
       final mid = videoDetail.value.owner?.mid;
       if (mid == null) {
         return;
       }
-      var result = await MemberHttp.memberCardInfo(mid: mid);
-      if (result.isSuccess) {
-        userStat.value = result.data;
+      final res = await MemberHttp.memberCardInfo(mid: mid);
+      if (res case Success(:final response)) {
+        userStat.value = response;
       }
     }
   }
 
   Future<void> queryAllStatus() async {
-    var result = await VideoHttp.videoRelation(bvid: bvid);
-    if (result case Success(:var response)) {
-      late final stat = videoDetail.value.stat!;
+    final result = await VideoHttp.videoRelation(bvid: bvid);
+    if (result case Success(:final response)) {
+      late final stat = videoDetail.value.stat;
       if (response.like!) {
-        stat.like = max(1, stat.like);
+        stat?.like = max(1, stat.like);
       }
       if (response.favorite!) {
-        stat.favorite = max(1, stat.favorite);
+        stat?.favorite = max(1, stat.favorite);
       }
       hasLike.value = response.like!;
       hasDislike.value = response.dislike!;
@@ -188,20 +186,20 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
       SmartDialog.showToast('已三连');
       return;
     }
-    var result = await VideoHttp.ugcTriple(bvid: bvid);
+    final result = await VideoHttp.ugcTriple(bvid: bvid);
     if (result case Success(:final response)) {
-      late final stat = videoDetail.value.stat!;
+      late final stat = videoDetail.value.stat;
       if (response.like == true && !hasLike.value) {
-        stat.like++;
+        stat?.like++;
         hasLike.value = true;
       }
       if (response.coin == true && !hasCoin) {
-        stat.coin += 2;
+        stat?.coin += 2;
         coinNum.value = 2;
         GlobalData().afterCoin(2);
       }
       if (response.fav == true && !hasFav.value) {
-        stat.favorite++;
+        stat?.favorite++;
         hasFav.value = true;
       }
       hasDislike.value = false;
@@ -226,10 +224,10 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
       return;
     }
     final newVal = !hasLike.value;
-    var result = await VideoHttp.likeVideo(bvid: bvid, type: newVal);
+    final result = await VideoHttp.likeVideo(bvid: bvid, type: newVal);
     if (result case Success(:final response)) {
       SmartDialog.showToast(newVal ? response : '取消赞');
-      videoDetail.value.stat!.like += newVal ? 1 : -1;
+      videoDetail.value.stat?.like += newVal ? 1 : -1;
       hasLike.value = newVal;
       if (newVal) {
         hasDislike.value = false;
@@ -244,16 +242,16 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
       SmartDialog.showToast('账号未登录');
       return;
     }
-    var result = await VideoHttp.dislikeVideo(
+    final res = await VideoHttp.dislikeVideo(
       bvid: bvid,
       type: !hasDislike.value,
     );
-    if (result.isSuccess) {
+    if (res.isSuccess) {
       if (!hasDislike.value) {
         SmartDialog.showToast('点踩成功');
         hasDislike.value = true;
         if (hasLike.value) {
-          videoDetail.value.stat!.like--;
+          videoDetail.value.stat?.like--;
           hasLike.value = false;
         }
       } else {
@@ -261,7 +259,7 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
         hasDislike.value = false;
       }
     } else {
-      result.toast();
+      res.toast();
     }
   }
 
@@ -410,7 +408,7 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
     if (videoDetail.owner == null || videoDetail.staff?.isNotEmpty == true) {
       return;
     }
-    var result = await UserHttp.hasFollow(videoDetail.owner!.mid!);
+    final result = await UserHttp.hasFollow(videoDetail.owner!.mid!);
     if (result['status']) {
       Map data = result['data'];
       if (data['special'] == 1) data['attribute'] = -10;
@@ -434,7 +432,7 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
     }
     int attr = followStatus['attribute'] ?? 0;
     if (attr == 128) {
-      var res = await VideoHttp.relationMod(
+      final res = await VideoHttp.relationMod(
         mid: mid,
         act: 6,
         reSrc: 11,
@@ -516,9 +514,11 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
         // 重新请求评论
         if (videoDetailCtr.showReply) {
           try {
-            Get.find<VideoReplyController>(tag: heroTag)
-              ..aid = aid
-              ..onReload();
+            final replyCtr = Get.find<VideoReplyController>(tag: heroTag)
+              ..aid = aid;
+            if (replyCtr.loadingState.value is! Loading) {
+              replyCtr.onReload();
+            }
           } catch (_) {}
         }
 
@@ -722,25 +722,24 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
       return false;
     }
 
-    if (relatedCtr.loadingState.value is! Success) {
-      return false;
+    if (relatedCtr.loadingState.value case Success(:final response)) {
+      final firstItem = response?.firstOrNull;
+      if (firstItem == null) {
+        SmartDialog.showToast('暂无相关视频，停止连播');
+        return false;
+      }
+      onChangeEpisode(
+        BaseEpisodeItem(
+          aid: firstItem.aid,
+          bvid: firstItem.bvid,
+          cid: firstItem.cid,
+          cover: firstItem.cover,
+        ),
+      );
+      return true;
     }
 
-    if (relatedCtr.loadingState.value.data.isNullOrEmpty) {
-      SmartDialog.showToast('暂无相关视频，停止连播');
-      return false;
-    }
-
-    final firstItem = relatedCtr.loadingState.value.data!.first;
-    onChangeEpisode(
-      BaseEpisodeItem(
-        aid: firstItem.aid,
-        bvid: firstItem.bvid,
-        cid: firstItem.cid,
-        cover: firstItem.cover,
-      ),
-    );
-    return true;
+    return false;
   }
 
   // ai总结

@@ -63,7 +63,7 @@ abstract class CommonRichTextPubPageState<T extends CommonRichTextPubPage>
   @override
   void dispose() {
     if (PlatformUtils.isMobile) {
-      for (var i in pathList) {
+      for (final i in pathList) {
         File(i).tryDel();
       }
     }
@@ -230,7 +230,7 @@ abstract class CommonRichTextPubPageState<T extends CommonRichTextPubPage>
   List<Map<String, dynamic>>? getRichContent() {
     if (editController.items.isEmpty) return null;
     final list = <Map<String, dynamic>>[];
-    for (var e in editController.items) {
+    for (final e in editController.items) {
       switch (e.type) {
         case RichTextType.text || RichTextType.composing || RichTextType.common:
           list.add({
@@ -239,11 +239,17 @@ abstract class CommonRichTextPubPageState<T extends CommonRichTextPubPage>
             "biz_id": "",
           });
         case RichTextType.at:
-          list.add({
-            "raw_text": '@${e.rawText}',
-            "type": 2,
-            "biz_id": e.id,
-          });
+          list
+            ..add({
+              "raw_text": '@${e.rawText}',
+              "type": 2,
+              "biz_id": e.id,
+            })
+            ..add({
+              "raw_text": ' ',
+              "type": 1,
+              "biz_id": "",
+            });
         case RichTextType.emoji:
           list.add({
             "raw_text": e.rawText,
@@ -268,7 +274,7 @@ abstract class CommonRichTextPubPageState<T extends CommonRichTextPubPage>
   }
 
   late double _mentionOffset = 0;
-  Future<void> onMention([bool fromClick = false]) async {
+  Future<void>? onMention([bool fromClick = false]) async {
     controller.keepChatPanel();
     final res = await DynMentionPanel.onDynMention(
       context,
@@ -279,7 +285,7 @@ abstract class CommonRichTextPubPageState<T extends CommonRichTextPubPage>
       if (res is MentionItem) {
         _onInsertUser(res, fromClick);
       } else if (res is Set<MentionItem>) {
-        for (var e in res) {
+        for (final e in res) {
           e.checked = false;
           _onInsertUser(e, fromClick);
         }
@@ -313,7 +319,7 @@ abstract class CommonRichTextPubPageState<T extends CommonRichTextPubPage>
 
     enablePublish.value = true;
 
-    var oldValue = editController.value;
+    final oldValue = editController.value;
     final selection = oldValue.selection;
 
     if (selection.isValid) {

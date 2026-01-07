@@ -2,7 +2,6 @@ import 'package:PiliPlus/http/fav.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/http/pgc.dart';
 import 'package:PiliPlus/models/common/home_tab_type.dart';
-import 'package:PiliPlus/models_new/fav/fav_pgc/data.dart';
 import 'package:PiliPlus/models_new/fav/fav_pgc/list.dart';
 import 'package:PiliPlus/models_new/pgc/pgc_index_result/list.dart';
 import 'package:PiliPlus/models_new/pgc/pgc_timeline/result.dart';
@@ -74,8 +73,8 @@ class PgcController
       PgcHttp.pgcTimeline(types: 1, before: 6, after: 6),
       PgcHttp.pgcTimeline(types: 4, before: 6, after: 6),
     ]);
-    var list1 = res.first.dataOrNull;
-    var list2 = res[1].dataOrNull;
+    final list1 = res.first.dataOrNull;
+    final list2 = res[1].dataOrNull;
     if (list1 != null &&
         list2 != null &&
         list1.isNotEmpty &&
@@ -83,10 +82,8 @@ class PgcController
       for (var i = 0; i < list1.length; i++) {
         list1[i].addAll(list2[i]);
       }
-    } else {
-      list1 ??= list2;
     }
-    timelineState.value = Success(list1);
+    timelineState.value = Success(list1 ?? list2);
   }
 
   // 我的订阅
@@ -97,15 +94,14 @@ class PgcController
       return;
     }
     followLoading = true;
-    var res = await FavHttp.favPgc(
+    final res = await FavHttp.favPgc(
       type: tabType == HomeTabType.bangumi ? 1 : 2,
       pn: followPage,
     );
 
-    if (res.isSuccess) {
-      FavPgcData data = res.data;
-      List<FavPgcItemModel>? list = data.list;
-      followCount.value = data.total ?? -1;
+    if (res case Success(:final response)) {
+      final list = response.list;
+      followCount.value = response.total ?? -1;
 
       if (list == null || list.isEmpty) {
         followEnd = true;
@@ -122,8 +118,8 @@ class PgcController
         }
         followState.value = Success(list);
         followController?.animToTop();
-      } else if (followState.value.isSuccess) {
-        final currentList = followState.value.data!..addAll(list);
+      } else if (followState.value case Success(:final response)) {
+        final currentList = response!..addAll(list);
         if (currentList.length >= followCount.value) {
           followEnd = true;
         }

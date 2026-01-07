@@ -1,5 +1,6 @@
 import 'dart:io' show File;
 
+import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/loading_widget.dart';
 import 'package:PiliPlus/http/fav.dart';
 import 'package:PiliPlus/http/loading_state.dart';
@@ -7,9 +8,7 @@ import 'package:PiliPlus/http/msg.dart';
 import 'package:PiliPlus/utils/extension/file_ext.dart';
 import 'package:PiliPlus/utils/extension/theme_ext.dart';
 import 'package:PiliPlus/utils/fav_utils.dart';
-import 'package:PiliPlus/utils/image_utils.dart';
 import 'package:PiliPlus/utils/platform_utils.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_debounce/easy_throttle.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show LengthLimitingTextInputFormatter;
@@ -27,8 +26,8 @@ class CreateFavPage extends StatefulWidget {
 
 class _CreateFavPageState extends State<CreateFavPage> {
   dynamic _mediaId;
-  late final _titleController = TextEditingController();
-  late final _introController = TextEditingController();
+  late final TextEditingController _titleController;
+  late final TextEditingController _introController;
   String? _cover;
   bool _isPublic = true;
   late final _imagePicker = ImagePicker();
@@ -38,6 +37,8 @@ class _CreateFavPageState extends State<CreateFavPage> {
   @override
   void initState() {
     super.initState();
+    _titleController = TextEditingController();
+    _introController = TextEditingController();
     _mediaId = Get.parameters['mediaId'];
     if (_mediaId != null) {
       _getFolderInfo();
@@ -179,6 +180,7 @@ class _CreateFavPageState extends State<CreateFavPage> {
           Builder(
             builder: (context) {
               return ListTile(
+                visualDensity: .standard,
                 tileColor: theme.colorScheme.onInverseSurface,
                 onTap: () {
                   EasyThrottle.throttle(
@@ -191,9 +193,7 @@ class _CreateFavPageState extends State<CreateFavPage> {
                           builder: (_) {
                             return AlertDialog(
                               clipBehavior: Clip.hardEdge,
-                              contentPadding: const EdgeInsets.symmetric(
-                                vertical: 12,
-                              ),
+                              contentPadding: const .symmetric(vertical: 12),
                               content: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -242,15 +242,12 @@ class _CreateFavPageState extends State<CreateFavPage> {
                     if (_cover?.isNotEmpty == true)
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 5),
-                        child: ClipRRect(
+                        child: NetworkImgLayer(
+                          src: _cover,
+                          height: 55,
+                          width: 88,
                           borderRadius: const BorderRadius.all(
                             Radius.circular(6),
-                          ),
-                          child: CachedNetworkImage(
-                            imageUrl: ImageUtils.thumbnailUrl(_cover!),
-                            height: 55,
-                            width: 88,
-                            fit: BoxFit.cover,
                           ),
                         ),
                       ),
