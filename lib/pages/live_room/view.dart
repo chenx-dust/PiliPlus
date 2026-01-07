@@ -43,7 +43,7 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
-import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
+import 'package:screen_brightness/screen_brightness.dart';
 
 class LiveRoomPage extends StatefulWidget {
   const LiveRoomPage({super.key});
