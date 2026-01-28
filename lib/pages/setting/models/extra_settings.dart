@@ -3,6 +3,8 @@ import 'dart:math' show pi, max;
 
 import 'package:PiliPlus/common/widgets/custom_icon.dart';
 import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
+import 'package:PiliPlus/common/widgets/gesture/horizontal_drag_gesture_recognizer.dart'
+    show touchSlopH;
 import 'package:PiliPlus/common/widgets/image/custom_grid_view.dart'
     show CustomGridView, ImageModel;
 import 'package:PiliPlus/common/widgets/pendant_avatar.dart';
@@ -15,7 +17,8 @@ import 'package:PiliPlus/models/common/member/tab_type.dart';
 import 'package:PiliPlus/models/common/reply/reply_sort_type.dart';
 import 'package:PiliPlus/models/common/sponsor_block/skip_type.dart';
 import 'package:PiliPlus/models/common/super_resolution_type.dart';
-import 'package:PiliPlus/models/dynamics/result.dart';
+import 'package:PiliPlus/models/dynamics/result.dart'
+    show DynamicsDataModel, ItemModulesModel;
 import 'package:PiliPlus/pages/common/slide/common_slide_page.dart';
 import 'package:PiliPlus/pages/home/controller.dart';
 import 'package:PiliPlus/pages/hot/controller.dart';
@@ -131,54 +134,12 @@ List<SettingsModel> get extraSettings => [
       ],
     ),
   ),
-  NormalModel(
-    leading: const Icon(MdiIcons.debugStepOver),
+  getPopupMenuModel(
     title: '番剧片头/片尾跳过类型',
-    getTrailing: () => Builder(
-      builder: (context) {
-        final pgcSkipType = Pref.pgcSkipType;
-        final colorScheme = ColorScheme.of(context);
-        final color = pgcSkipType == SkipType.disable
-            ? colorScheme.outline
-            : colorScheme.secondary;
-        return PopupMenuButton<SkipType>(
-          initialValue: pgcSkipType,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text.rich(
-              style: TextStyle(fontSize: 14, height: 1, color: color),
-              strutStyle: const StrutStyle(
-                leading: 0,
-                height: 1,
-                fontSize: 14,
-              ),
-              TextSpan(
-                children: [
-                  TextSpan(text: pgcSkipType.title),
-                  WidgetSpan(
-                    alignment: .middle,
-                    child: Icon(
-                      MdiIcons.unfoldMoreHorizontal,
-                      size: 14,
-                      color: color,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          onSelected: (value) async {
-            await GStorage.setting.put(SettingBoxKey.pgcSkipType, value.index);
-            if (context.mounted) {
-              (context as Element).markNeedsBuild();
-            }
-          },
-          itemBuilder: (context) => SkipType.values
-              .map((e) => PopupMenuItem(value: e, child: Text(e.title)))
-              .toList(),
-        );
-      },
-    ),
+    leading: const Icon(MdiIcons.debugStepOver),
+    key: SettingBoxKey.pgcSkipType,
+    values: SkipType.values,
+    defaultIndex: SkipType.skipOnce.index,
   ),
   SwitchModel(
     title: '检查未读动态',
@@ -186,11 +147,9 @@ List<SettingsModel> get extraSettings => [
     leading: const Icon(Icons.notifications_none),
     setKey: SettingBoxKey.checkDynamic,
     defaultVal: true,
-    onChanged: (value) {
-      Get.find<MainController>().checkDynamic = value;
-    },
+    onChanged: (value) => Get.find<MainController>().checkDynamic = value,
     onTap: (context) {
-      int dynamicPeriod = Pref.dynamicPeriod;
+      String dynamicPeriod = Pref.dynamicPeriod.toString();
       showDialog(
         context: context,
         builder: (context) {
@@ -198,11 +157,9 @@ List<SettingsModel> get extraSettings => [
             title: const Text('检查周期'),
             content: TextFormField(
               autofocus: true,
-              initialValue: dynamicPeriod.toString(),
+              initialValue: dynamicPeriod,
               keyboardType: TextInputType.number,
-              onChanged: (value) {
-                dynamicPeriod = int.tryParse(value) ?? 5;
-              },
+              onChanged: (value) => dynamicPeriod = value,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               decoration: const InputDecoration(suffixText: 'min'),
             ),
@@ -218,13 +175,14 @@ List<SettingsModel> get extraSettings => [
               ),
               TextButton(
                 onPressed: () {
-                  Get.back();
-                  GStorage.setting.put(
-                    SettingBoxKey.dynamicPeriod,
-                    dynamicPeriod,
-                  );
-                  Get.find<MainController>().dynamicPeriod =
-                      dynamicPeriod * 60 * 1000;
+                  try {
+                    final val = int.parse(dynamicPeriod);
+                    Get.back();
+                    GStorage.setting.put(SettingBoxKey.dynamicPeriod, val);
+                    Get.find<MainController>().dynamicPeriod = val * 60 * 1000;
+                  } catch (e) {
+                    SmartDialog.showToast(e.toString());
+                  }
                 },
                 child: const Text('确定'),
               ),
@@ -273,17 +231,17 @@ List<SettingsModel> get extraSettings => [
     setKey: SettingBoxKey.expandIntroPanelH,
     defaultVal: false,
   ),
-  const SwitchModel(
+  SwitchModel(
     title: '横屏分P/合集列表显示在Tab栏',
-    leading: Icon(Icons.format_list_numbered_rtl_sharp),
+    leading: const Icon(Icons.format_list_numbered_rtl_sharp),
     setKey: SettingBoxKey.horizontalSeasonPanel,
-    defaultVal: false,
+    defaultVal: PlatformUtils.isDesktop,
   ),
-  const SwitchModel(
+  SwitchModel(
     title: '横屏播放页在侧栏打开UP主页',
-    leading: Icon(Icons.account_circle_outlined),
+    leading: const Icon(Icons.account_circle_outlined),
     setKey: SettingBoxKey.horizontalMemberPage,
-    defaultVal: false,
+    defaultVal: PlatformUtils.isDesktop,
   ),
   SwitchModel(
     title: '横屏在侧栏打开图片预览',
@@ -311,9 +269,7 @@ List<SettingsModel> get extraSettings => [
               autofocus: true,
               initialValue: replyLengthLimit,
               keyboardType: TextInputType.number,
-              onChanged: (value) {
-                replyLengthLimit = value;
-              },
+              onChanged: (value) => replyLengthLimit = value,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               decoration: const InputDecoration(suffixText: '行'),
             ),
@@ -364,12 +320,8 @@ List<SettingsModel> get extraSettings => [
             content: TextFormField(
               autofocus: true,
               initialValue: danmakuLineHeight,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              onChanged: (value) {
-                danmakuLineHeight = value;
-              },
+              keyboardType: const .numberWithOptions(decimal: true),
+              onChanged: (value) => danmakuLineHeight = value,
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'[\d\.]+')),
               ],
@@ -409,6 +361,13 @@ List<SettingsModel> get extraSettings => [
     leading: Icon(Icons.warning_amber_rounded),
     setKey: SettingBoxKey.showArgueMsg,
     defaultVal: true,
+  ),
+  SwitchModel(
+    title: '显示动态警告/争议信息',
+    leading: const Icon(Icons.warning_amber_rounded),
+    setKey: SettingBoxKey.showDynDispute,
+    defaultVal: false,
+    onChanged: (val) => ItemModulesModel.showDynDispute = val,
   ),
   const SwitchModel(
     title: '分P/合集：倒序播放从首集开始播放',
@@ -451,6 +410,56 @@ List<SettingsModel> get extraSettings => [
     leading: Icon(Icons.open_in_browser),
     setKey: SettingBoxKey.openInBrowser,
     defaultVal: false,
+  ),
+  NormalModel(
+    title: '横向滑动阈值',
+    getSubtitle: () => '当前:「${Pref.touchSlopH}」',
+    onTap: (context, setState) {
+      String initialValue = Pref.touchSlopH.toString();
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('横向滑动阈值'),
+            content: TextFormField(
+              autofocus: true,
+              initialValue: initialValue,
+              keyboardType: const .numberWithOptions(decimal: true),
+              onChanged: (value) => initialValue = value,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[\d\.]+')),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: Get.back,
+                child: Text(
+                  '取消',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () async {
+                  try {
+                    final val = double.parse(initialValue);
+                    Get.back();
+                    touchSlopH = val;
+                    await GStorage.setting.put(SettingBoxKey.touchSlopH, val);
+                    setState();
+                  } catch (e) {
+                    SmartDialog.showToast(e.toString());
+                  }
+                },
+                child: const Text('确定'),
+              ),
+            ],
+          );
+        },
+      );
+    },
+    leading: const Icon(Icons.pan_tool_alt_outlined),
   ),
   NormalModel(
     title: '刷新滑动距离',
@@ -679,9 +688,7 @@ List<SettingsModel> get extraSettings => [
     ),
     setKey: SettingBoxKey.antiGoodsDyn,
     defaultVal: false,
-    onChanged: (value) {
-      DynamicsDataModel.antiGoodsDyn = value;
-    },
+    onChanged: (value) => DynamicsDataModel.antiGoodsDyn = value,
   ),
   SwitchModel(
     title: '屏蔽带货评论',
@@ -695,9 +702,7 @@ List<SettingsModel> get extraSettings => [
     ),
     setKey: SettingBoxKey.antiGoodsReply,
     defaultVal: false,
-    onChanged: (value) {
-      ReplyGrpc.antiGoodsReply = value;
-    },
+    onChanged: (value) => ReplyGrpc.antiGoodsReply = value,
   ),
   SwitchModel(
     title: '侧滑关闭二级页面',
@@ -707,9 +712,7 @@ List<SettingsModel> get extraSettings => [
     ),
     setKey: SettingBoxKey.slideDismissReplyPage,
     defaultVal: Platform.isIOS,
-    onChanged: (value) {
-      CommonSlideMixin.slideDismissReplyPage = value;
-    },
+    onChanged: (value) => CommonSlideMixin.slideDismissReplyPage = value,
   ),
   const SwitchModel(
     title: '启用双指缩小视频',
@@ -743,6 +746,13 @@ List<SettingsModel> get extraSettings => [
     setKey: SettingBoxKey.silentDownImg,
     defaultVal: false,
     onChanged: (value) => ImageUtils.silentDownImg = value,
+  ),
+  SwitchModel(
+    title: '长按/右键显示图片菜单',
+    leading: const Icon(Icons.menu),
+    setKey: SettingBoxKey.enableImgMenu,
+    defaultVal: false,
+    onChanged: (value) => CustomGridView.enableImgMenu = value,
   ),
   SwitchModel(
     setKey: SettingBoxKey.feedBackEnable,
@@ -841,9 +851,7 @@ List<SettingsModel> get extraSettings => [
     leading: const Icon(Icons.search_outlined),
     setKey: SettingBoxKey.enableWordRe,
     defaultVal: false,
-    onChanged: (value) {
-      ReplyItemGrpc.enableWordRe = value;
-    },
+    onChanged: (value) => ReplyItemGrpc.enableWordRe = value,
   ),
   const SwitchModel(
     title: '启用AI总结',
@@ -927,23 +935,20 @@ List<SettingsModel> get extraSettings => [
   NormalModel(
     title: '评论展示',
     leading: const Icon(Icons.whatshot_outlined),
-    getSubtitle: () =>
-        '当前优先展示「${ReplySortType.values[Pref.replySortType].title}」',
+    getSubtitle: () => '当前优先展示「${Pref.replySortType.title}」',
     onTap: (context, setState) async {
-      final result = await showDialog<int>(
+      final result = await showDialog<ReplySortType>(
         context: context,
         builder: (context) {
-          return SelectDialog<int>(
+          return SelectDialog<ReplySortType>(
             title: '评论展示',
             value: Pref.replySortType,
-            values: ReplySortType.values
-                .map((e) => (e.index, e.title))
-                .toList(),
+            values: ReplySortType.values.map((e) => (e, e.title)).toList(),
           );
         },
       );
       if (result != null) {
-        await GStorage.setting.put(SettingBoxKey.replySortType, result);
+        await GStorage.setting.put(SettingBoxKey.replySortType, result.index);
         setState();
       }
     },
@@ -951,27 +956,37 @@ List<SettingsModel> get extraSettings => [
   NormalModel(
     title: '动态展示',
     leading: const Icon(Icons.dynamic_feed_rounded),
-    getSubtitle: () =>
-        '当前优先展示「${DynamicsTabType.values[Pref.defaultDynamicType].label}」',
+    getSubtitle: () => '当前优先展示「${Pref.defaultDynamicType.label}」',
     onTap: (context, setState) async {
-      final result = await showDialog<int>(
+      final result = await showDialog<DynamicsTabType>(
         context: context,
         builder: (context) {
-          return SelectDialog<int>(
+          return SelectDialog<DynamicsTabType>(
             title: '动态展示',
             value: Pref.defaultDynamicType,
             values: DynamicsTabType.values
                 .take(4)
-                .map((e) => (e.index, e.label))
+                .map((e) => (e, e.label))
                 .toList(),
           );
         },
       );
       if (result != null) {
-        await GStorage.setting.put(SettingBoxKey.defaultDynamicType, result);
+        await GStorage.setting.put(
+          SettingBoxKey.defaultDynamicType,
+          result.index,
+        );
         setState();
       }
     },
+  ),
+  SwitchModel(
+    title: '显示动态互动内容',
+    subtitle: '开启后则在动态卡片底部显示互动内容（如关注的人点赞、热评等）',
+    leading: const Icon(Icons.quickreply_outlined),
+    setKey: SettingBoxKey.showDynInteraction,
+    defaultVal: true,
+    onChanged: (val) => ItemModulesModel.showDynInteraction = val,
   ),
   NormalModel(
     title: '用户页默认展示TAB',

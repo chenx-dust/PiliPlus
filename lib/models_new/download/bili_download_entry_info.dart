@@ -36,7 +36,7 @@ class BiliDownloadEntryInfo with MultiSelectData {
 
   late String pageDirPath;
   late String entryDirPath;
-  DownloadStatus? status;
+  late DownloadStatus status = .wait;
 
   int get cid => source?.cid ?? pageData!.cid;
 
@@ -239,6 +239,8 @@ class PageInfo {
   final String? downloadTitle;
   final String? downloadSubtitle;
 
+  bool get cacheWidth => width <= height;
+
   PageInfo({
     required this.cid,
     required this.page,
@@ -398,4 +400,6 @@ enum DownloadStatus {
 
   final String message;
   const DownloadStatus(this.message);
+
+  bool get isDownloading => index <= 3;
 }

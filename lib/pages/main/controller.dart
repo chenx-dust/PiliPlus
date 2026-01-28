@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' show max;
 
 import 'package:PiliPlus/common/widgets/view_safe_area.dart';
 import 'package:PiliPlus/grpc/dyn.dart';
@@ -31,7 +30,8 @@ class MainController extends GetxController
 
   List<NavigationBarType> navigationBars = <NavigationBarType>[];
 
-  RxBool? bottomBar;
+  RxBool? showBottomBar;
+  bool useBottomNav = false;
   late dynamic controller;
   final RxInt selectedIndex = 0.obs;
 
@@ -82,10 +82,10 @@ class MainController extends GetxController
           )
         : PageController(initialPage: selectedIndex.value);
 
-    if (navigationBars.length > 1 && Pref.hideTabBar) {
-      bottomBar = true.obs;
+    if (!useSideBar && navigationBars.length > 1 && Pref.hideBottomBar) {
+      showBottomBar = true.obs;
     }
-    dynamicBadgeMode = DynamicBadgeMode.values[Pref.dynamicBadgeMode];
+    dynamicBadgeMode = Pref.dynamicBadgeMode;
 
     hasDyn = navigationBars.contains(NavigationBarType.dynamics);
     if (dynamicBadgeMode != DynamicBadgeMode.hidden) {
@@ -211,7 +211,6 @@ class MainController extends GetxController
   void setNavBarConfig() {
     List<int>? navBarSort =
         (GStorage.setting.get(SettingBoxKey.navBarSort) as List?)?.fromCast();
-    int defaultHomePage = Pref.defaultHomePage;
     late final List<NavigationBarType> navigationBars;
     if (navBarSort == null || navBarSort.isEmpty) {
       navigationBars = NavigationBarType.values;
@@ -221,10 +220,7 @@ class MainController extends GetxController
           .toList();
     }
     this.navigationBars = navigationBars;
-    selectedIndex.value = max(
-      0,
-      navigationBars.indexWhere((e) => e.index == defaultHomePage),
-    );
+    selectedIndex.value = Pref.defaultHomePageIndex;
   }
 
   void checkDefaultSearch([bool shouldCheck = false]) {
@@ -319,13 +315,13 @@ class MainController extends GetxController
 
   void setSearchBar() {
     if (hasHome) {
-      homeController.searchBar?.value = true;
+      homeController.showSearchBar?.value = true;
     }
   }
 
   @override
   void onClose() {
-    bottomBar?.close();
+    showBottomBar?.close();
     controller.dispose();
     super.onClose();
   }

@@ -4,6 +4,7 @@ import 'package:PiliPlus/common/constants.dart';
 import 'package:PiliPlus/common/widgets/badge.dart';
 import 'package:PiliPlus/common/widgets/dialog/report.dart';
 import 'package:PiliPlus/common/widgets/flutter/text/text.dart' as custom_text;
+import 'package:PiliPlus/common/widgets/gesture/tap_gesture_recognizer.dart';
 import 'package:PiliPlus/common/widgets/image/custom_grid_view.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/common/widgets/pendant_avatar.dart';
@@ -33,7 +34,6 @@ import 'package:PiliPlus/utils/utils.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fixnum/fixnum.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
@@ -78,7 +78,6 @@ class ReplyItemGrpc extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
 
-    final isMobile = PlatformUtils.isMobile;
     void showMore() => showModalBottomSheet(
       context: context,
       useSafeArea: true,
@@ -99,71 +98,65 @@ class ReplyItemGrpc extends StatelessWidget {
     return Material(
       type: MaterialType.transparency,
       child: InkWell(
-        onTap: () {
-          feedBack();
-          replyReply?.call(replyItem, null);
-        },
-        onLongPress: () {
-          feedBack();
-          showMore();
-        },
-        onSecondaryTap: isMobile ? null : showMore,
+        onTap: () => replyReply?.call(replyItem, null),
+        onLongPress: showMore,
+        onSecondaryTap: PlatformUtils.isMobile ? null : showMore,
         child: _buildContent(context, theme),
       ),
     );
   }
 
-  Widget _buildAuthorPanel(BuildContext context, ThemeData theme) => Padding(
-    padding: const EdgeInsets.fromLTRB(12, 14, 8, 5),
-    child: content(context, theme),
-  );
-
   Widget _buildContent(BuildContext context, ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (PendantAvatar.showDynDecorate &&
-            replyItem.member.hasGarbCardImage())
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Positioned(
-                top: 8,
-                right: 12,
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  alignment: Alignment.centerRight,
-                  children: [
-                    CachedNetworkImage(
-                      height: 38,
-                      memCacheHeight: 38.cacheSize(context),
-                      imageUrl: ImageUtils.safeThumbnailUrl(
-                        replyItem.member.garbCardImage,
-                      ),
-                      placeholder: (_, _) => const SizedBox.shrink(),
-                    ),
-                    if (replyItem.member.hasGarbCardNumber())
-                      Text(
-                        'NO.\n${replyItem.member.garbCardNumber}',
-                        style: TextStyle(
-                          fontSize: 8,
-                          fontFamily: 'digital_id_num',
-                          color:
-                              replyItem.member.garbCardFanColor.startsWith('#')
-                              ? Utils.parseColor(
-                                  replyItem.member.garbCardFanColor,
-                                )
-                              : null,
-                        ),
-                      ),
-                  ],
+    Widget child = Padding(
+      padding: const .fromLTRB(12, 14, 8, 5),
+      child: content(context, theme),
+    );
+    const double top = 8.0;
+    const double right = 12.0;
+    const double height = 38.0;
+    if (PendantAvatar.showDynDecorate && replyItem.member.hasGarbCardImage()) {
+      child = Stack(
+        clipBehavior: .none,
+        children: [
+          child,
+          Positioned(
+            top: top,
+            right: right,
+            height: height,
+            child: CachedNetworkImage(
+              height: height,
+              memCacheHeight: height.cacheSize(context),
+              imageUrl: ImageUtils.safeThumbnailUrl(
+                replyItem.member.garbCardImage,
+              ),
+              placeholder: (_, _) => const SizedBox.shrink(),
+            ),
+          ),
+          if (replyItem.member.hasGarbCardNumber())
+            Positioned(
+              top: top,
+              right: right,
+              height: height,
+              child: Center(
+                child: Text(
+                  'NO.\n${replyItem.member.garbCardNumber}',
+                  style: TextStyle(
+                    fontSize: 8,
+                    fontFamily: 'digital_id_num',
+                    color: replyItem.member.garbCardFanColor.startsWith('#')
+                        ? Utils.parseColor(replyItem.member.garbCardFanColor)
+                        : null,
+                  ),
                 ),
               ),
-              _buildAuthorPanel(context, theme),
-            ],
-          )
-        else
-          _buildAuthorPanel(context, theme),
+            ),
+        ],
+      );
+    }
+    return Column(
+      crossAxisAlignment: .stretch,
+      children: [
+        child,
         if (needDivider)
           Divider(
             indent: 55,
@@ -174,17 +167,6 @@ class ReplyItemGrpc extends StatelessWidget {
       ],
     );
   }
-
-  Widget _buildAvatar() => PendantAvatar(
-    avatar: replyItem.member.face,
-    size: 34,
-    badgeSize: 14,
-    isVip: replyItem.member.vipStatus > 0,
-    officialType: replyItem.member.officialVerifyType.toInt(),
-    garbPendantImage: replyItem.member.hasGarbPendantImage()
-        ? replyItem.member.garbPendantImage
-        : null,
-  );
 
   Widget content(BuildContext context, ThemeData theme) {
     return LayoutBuilder(
@@ -201,8 +183,8 @@ class ReplyItemGrpc extends StatelessWidget {
       right: 6,
     );
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
+      mainAxisSize: .min,
+      crossAxisAlignment: .start,
       children: [
         GestureDetector(
           behavior: HitTestBehavior.opaque,
@@ -211,11 +193,20 @@ class ReplyItemGrpc extends StatelessWidget {
             Get.toNamed('/member?mid=${replyItem.mid}');
           },
           child: Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: .min,
+            crossAxisAlignment: .center,
             spacing: 12,
             children: [
-              _buildAvatar(),
+              PendantAvatar(
+                avatar: replyItem.member.face,
+                size: 34,
+                badgeSize: 14,
+                isVip: replyItem.member.vipStatus > 0,
+                officialType: replyItem.member.officialVerifyType.toInt(),
+                garbPendantImage: replyItem.member.hasGarbPendantImage()
+                    ? replyItem.member.garbPendantImage
+                    : null,
+              ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -479,10 +470,7 @@ class ReplyItemGrpc extends StatelessWidget {
                 return InkWell(
                   onTap: () =>
                       replyReply?.call(replyItem, childReply.id.toInt()),
-                  onLongPress: () {
-                    feedBack();
-                    showMore();
-                  },
+                  onLongPress: showMore,
                   onSecondaryTap: PlatformUtils.isMobile ? null : showMore,
                   child: Padding(
                     padding: padding,
@@ -503,7 +491,7 @@ class ReplyItemGrpc extends StatelessWidget {
                             style: TextStyle(
                               color: theme.colorScheme.primary,
                             ),
-                            recognizer: TapGestureRecognizer()
+                            recognizer: NoDeadlineTapGestureRecognizer()
                               ..onTap = () {
                                 feedBack();
                                 Get.toNamed(
@@ -636,7 +624,7 @@ class ReplyItemGrpc extends StatelessWidget {
           style: TextStyle(
             color: theme.colorScheme.primary,
           ),
-          recognizer: TapGestureRecognizer()
+          recognizer: NoDeadlineTapGestureRecognizer()
             ..onTap = () {
               if (url.appUrlSchema.isEmpty) {
                 if (RegExp(
@@ -715,7 +703,7 @@ class ReplyItemGrpc extends StatelessWidget {
             TextSpan(
               text: matchStr,
               style: TextStyle(color: theme.colorScheme.primary),
-              recognizer: TapGestureRecognizer()
+              recognizer: NoDeadlineTapGestureRecognizer()
                 ..onTap = () =>
                     Get.toNamed('/member?mid=${content.atNameToMid[name]}'),
             ),
@@ -725,7 +713,7 @@ class ReplyItemGrpc extends StatelessWidget {
             TextSpan(
               text: '投票: ${content.vote.title}',
               style: TextStyle(color: theme.colorScheme.primary),
-              recognizer: TapGestureRecognizer()
+              recognizer: NoDeadlineTapGestureRecognizer()
                 ..onTap = () =>
                     showVoteDialog(context, content.vote.id.toInt()),
             ),
@@ -750,7 +738,7 @@ class ReplyItemGrpc extends StatelessWidget {
                   ? TextStyle(color: theme.colorScheme.primary)
                   : null,
               recognizer: isValid
-                  ? (TapGestureRecognizer()
+                  ? (NoDeadlineTapGestureRecognizer()
                       ..onTap = () {
                         // 跳转到指定位置
                         try {
@@ -781,7 +769,7 @@ class ReplyItemGrpc extends StatelessWidget {
               TextSpan(
                 text: matchStr,
                 style: TextStyle(color: theme.colorScheme.primary),
-                recognizer: TapGestureRecognizer()
+                recognizer: NoDeadlineTapGestureRecognizer()
                   ..onTap = () {
                     Get.toNamed(
                       '/searchResult',
@@ -795,7 +783,7 @@ class ReplyItemGrpc extends StatelessWidget {
               TextSpan(
                 text: matchStr,
                 style: TextStyle(color: theme.colorScheme.primary),
-                recognizer: TapGestureRecognizer()
+                recognizer: NoDeadlineTapGestureRecognizer()
                   ..onTap = () => PageUtils.handleWebview(matchStr),
               ),
             );
@@ -836,7 +824,7 @@ class ReplyItemGrpc extends StatelessWidget {
                 : theme.colorScheme.secondary,
           ),
           recognizer: hasClickUrl
-              ? (TapGestureRecognizer()
+              ? (NoDeadlineTapGestureRecognizer()
                   ..onTap = () =>
                       PageUtils.handleWebview(content.richText.note.clickUrl))
               : null,

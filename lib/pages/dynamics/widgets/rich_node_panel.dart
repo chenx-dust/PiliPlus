@@ -1,5 +1,6 @@
 import 'dart:io' show Platform;
 
+import 'package:PiliPlus/common/widgets/gesture/tap_gesture_recognizer.dart';
 import 'package:PiliPlus/common/widgets/image/custom_grid_view.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/http/dynamics.dart';
@@ -12,7 +13,6 @@ import 'package:PiliPlus/models/dynamics/result.dart';
 import 'package:PiliPlus/pages/dynamics/widgets/vote.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
@@ -35,10 +35,13 @@ TextSpan? richNode(
       if (richTextNodes == null || richTextNodes.isEmpty) {
         return TextSpan(text: desc.text);
       }
-    } else if (moduleDynamic?.major?.opus case final opus?) {
+    } else if (moduleDynamic?.major?.opus case DynamicOpusModel(
+      :final title,
+      :final summary,
+    )) {
       // 动态页面 richTextNodes 层级可能与主页动态层级不同
-      richTextNodes = opus.summary?.richTextNodes;
-      if (opus.title case final title?) {
+      richTextNodes = summary?.richTextNodes;
+      if (title != null && title.isNotEmpty) {
         spanChildren.add(
           TextSpan(
             text: '$title\n',
@@ -67,7 +70,7 @@ TextSpan? richNode(
               TextSpan(
                 text: ' ${i.text}',
                 style: style,
-                recognizer: TapGestureRecognizer()
+                recognizer: NoDeadlineTapGestureRecognizer()
                   ..onTap = () => Get.toNamed('/member?mid=${i.rid}'),
               ),
             );
@@ -76,9 +79,9 @@ TextSpan? richNode(
           case 'RICH_TEXT_NODE_TYPE_TOPIC':
             spanChildren.add(
               TextSpan(
-                text: i.origText!,
+                text: i.origText,
                 style: style,
-                recognizer: TapGestureRecognizer()
+                recognizer: NoDeadlineTapGestureRecognizer()
                   ..onTap = () => Get.toNamed(
                     '/searchResult',
                     parameters: {
@@ -110,7 +113,7 @@ TextSpan? richNode(
                   style: style,
                   recognizer: i.origText == null
                       ? null
-                      : (TapGestureRecognizer()
+                      : (NoDeadlineTapGestureRecognizer()
                           ..onTap = () => PageUtils.handleWebview(i.origText!)),
                 ),
               );
@@ -132,7 +135,7 @@ TextSpan? richNode(
                 TextSpan(
                   text: '投票：${i.text}',
                   style: style,
-                  recognizer: TapGestureRecognizer()
+                  recognizer: NoDeadlineTapGestureRecognizer()
                     ..onTap = () {
                       final dynIdStr = item.basic?.commentIdStr;
                       final dynId = dynIdStr != null
@@ -174,7 +177,7 @@ TextSpan? richNode(
                 TextSpan(
                   text: '${i.origText} ',
                   style: style,
-                  recognizer: TapGestureRecognizer()
+                  recognizer: NoDeadlineTapGestureRecognizer()
                     ..onTap = () => Get.toNamed(
                       '/webview',
                       parameters: {
@@ -204,7 +207,7 @@ TextSpan? richNode(
                   style: style,
                   recognizer: i.jumpUrl == null
                       ? null
-                      : (TapGestureRecognizer()
+                      : (NoDeadlineTapGestureRecognizer()
                           ..onTap = () => PageUtils.handleWebview(i.jumpUrl!)),
                 ),
               );
@@ -226,7 +229,7 @@ TextSpan? richNode(
                 TextSpan(
                   text: '${i.text} ',
                   style: style,
-                  recognizer: TapGestureRecognizer()
+                  recognizer: NoDeadlineTapGestureRecognizer()
                     ..onTap = () async {
                       try {
                         int? cid = await SearchHttp.ab2c(bvid: i.rid);
@@ -269,7 +272,7 @@ TextSpan? richNode(
                 TextSpan(
                   text: i.text,
                   style: style,
-                  recognizer: TapGestureRecognizer()
+                  recognizer: NoDeadlineTapGestureRecognizer()
                     ..onTap = () {
                       void onView(List<OpusPicModel> list) {
                         PageUtils.imageView(
@@ -325,7 +328,7 @@ TextSpan? richNode(
                   style: style,
                   recognizer: i.jumpUrl == null
                       ? null
-                      : (TapGestureRecognizer()
+                      : (NoDeadlineTapGestureRecognizer()
                           ..onTap = () => PageUtils.handleWebview(i.jumpUrl!)),
                 ),
               );
@@ -337,7 +340,7 @@ TextSpan? richNode(
                 style: style,
                 recognizer: i.jumpUrl == null
                     ? null
-                    : (TapGestureRecognizer()
+                    : (NoDeadlineTapGestureRecognizer()
                         ..onTap = () => PageUtils.handleWebview(i.jumpUrl!)),
               ),
             );

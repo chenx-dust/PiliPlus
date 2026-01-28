@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:PiliPlus/common/constants.dart';
 import 'package:PiliPlus/common/widgets/badge.dart';
+import 'package:PiliPlus/common/widgets/gesture/tap_gesture_recognizer.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/grpc/bilibili/im/interfaces/v1.pb.dart'
     show EmotionInfo;
@@ -19,7 +20,6 @@ import 'package:PiliPlus/utils/id_utils.dart';
 import 'package:PiliPlus/utils/image_utils.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
@@ -211,7 +211,7 @@ class ChatItem extends StatelessWidget {
             },
             child: NetworkImgLayer(
               width: 220,
-              height: 220 * 9 / 16,
+              height: 123.75,
               src: content['cover'],
             ),
           ),
@@ -259,7 +259,7 @@ class ChatItem extends StatelessWidget {
               for (final i in content['image_urls'])
                 NetworkImgLayer(
                   width: 130,
-                  height: 130 * 9 / 16,
+                  height: 73.125,
                   src: i,
                 ),
             ],
@@ -348,7 +348,7 @@ class ChatItem extends StatelessWidget {
                   children: [
                     NetworkImgLayer(
                       width: 130,
-                      height: 130 * 9 / 16,
+                      height: 73.125,
                       src: i['cover_url'],
                     ),
                     Expanded(
@@ -435,7 +435,8 @@ class ChatItem extends StatelessWidget {
                       NetworkImgLayer(
                         type: ImageType.emote,
                         width: constrains.maxWidth,
-                        height: constrains.maxWidth * 9 / 16,
+                        height:
+                            constrains.maxWidth / StyleString.aspectRatio16x9,
                         src: content['cover'],
                       ),
                       PBadge(
@@ -544,7 +545,7 @@ class ChatItem extends StatelessWidget {
           onTap: onTap,
           child: NetworkImgLayer(
             width: 220,
-            height: 220 * 9 / 16,
+            height: 123.75,
             src: content['thumb'],
           ),
         ),
@@ -587,7 +588,7 @@ class ChatItem extends StatelessWidget {
     );
   }
 
-  Widget msgTypePic_2(content) {
+  Widget msgTypePic_2(Map content) {
     final url = content['url'];
     return GestureDetector(
       onTap: () => PageUtils.imageView(imgList: [SourceModel(url: url)]),
@@ -662,7 +663,7 @@ class ChatItem extends StatelessWidget {
             TextSpan(
               text: matchStr,
               style: style.copyWith(color: theme.colorScheme.primary),
-              recognizer: TapGestureRecognizer()
+              recognizer: NoDeadlineTapGestureRecognizer()
                 ..onTap = () => PiliScheme.routePushFromUrl(matchStr),
             ),
           );

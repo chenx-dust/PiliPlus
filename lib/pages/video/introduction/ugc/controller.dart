@@ -302,7 +302,8 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
       context: context,
       builder: (_) {
         final videoDetail = this.videoDetail.value;
-        String videoUrl = '${HttpString.baseUrl}/video/$bvid';
+        String videoUrl =
+            '${HttpString.baseUrl}/video/$bvid${videoDetailCtr.playedTimePos}';
         return AlertDialog(
           clipBehavior: Clip.hardEdge,
           contentPadding: const EdgeInsets.symmetric(vertical: 12),
@@ -408,11 +409,10 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
     if (videoDetail.owner == null || videoDetail.staff?.isNotEmpty == true) {
       return;
     }
-    final result = await UserHttp.hasFollow(videoDetail.owner!.mid!);
-    if (result['status']) {
-      Map data = result['data'];
-      if (data['special'] == 1) data['attribute'] = -10;
-      followStatus.value = data;
+    final res = await UserHttp.hasFollow(videoDetail.owner!.mid!);
+    if (res case Success(:final response)) {
+      if (response['special'] == 1) response['attribute'] = -10;
+      followStatus.value = response;
     }
   }
 

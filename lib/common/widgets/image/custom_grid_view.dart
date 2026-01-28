@@ -15,21 +15,30 @@
  * along with PiliPlus.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import 'dart:io' show Platform;
 import 'dart:math' show min;
 
 import 'package:PiliPlus/common/constants.dart';
 import 'package:PiliPlus/common/widgets/badge.dart';
-import 'package:PiliPlus/common/widgets/flutter/custom_layout.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/models/common/badge_type.dart';
 import 'package:PiliPlus/models/common/image_preview_type.dart';
 import 'package:PiliPlus/utils/extension/context_ext.dart';
 import 'package:PiliPlus/utils/extension/num_ext.dart';
 import 'package:PiliPlus/utils/extension/size_ext.dart';
+import 'package:PiliPlus/utils/image_utils.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
 import 'package:flutter/material.dart'
     hide CustomMultiChildLayout, MultiChildLayoutDelegate;
+import 'package:flutter/rendering.dart'
+    show
+        ContainerRenderObjectMixin,
+        RenderBoxContainerDefaultsMixin,
+        MultiChildLayoutParentData,
+        BoxHitTestResult;
+import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_navigation/get_navigation.dart';
 
@@ -51,14 +60,13 @@ class ImageModel {
   bool? _isLongPic;
   bool? _isLivePhoto;
 
-  bool get isLongPic => _isLongPic ??= (height / width) > _maxRatio;
+  bool get isLongPic =>
+      _isLongPic ??= (height / width) > StyleString.imgMaxRatio;
   bool get isLivePhoto =>
       _isLivePhoto ??= enableLivePhoto && liveUrl?.isNotEmpty == true;
 
   static bool enableLivePhoto = Pref.enableLivePhoto;
 }
-
-const double _maxRatio = 22 / 9;
 
 class CustomGridView extends StatelessWidget {
   const CustomGridView({
@@ -113,7 +121,7 @@ class CustomGridView extends StatelessWidget {
     );
   }
 
-  static BorderRadius borderRadius(
+  static BorderRadius _borderRadius(
     int col,
     int length,
     int index, {
@@ -135,6 +143,56 @@ class CustomGridView extends StatelessWidget {
       topRight: !hasUp && !hasRight ? r : Radius.zero,
       bottomLeft: !hasDown && !hasLeft ? r : Radius.zero,
       bottomRight: !hasDown && !hasRight ? r : Radius.zero,
+    );
+  }
+
+  static bool enableImgMenu = Pref.enableImgMenu;
+
+  void _showMenu(BuildContext context, Offset offset, ImageModel item) {
+    HapticFeedback.mediumImpact();
+    showMenu(
+      context: context,
+      position: PageUtils.menuPosition(offset),
+      items: [
+        if (PlatformUtils.isMobile)
+          PopupMenuItem(
+            height: 42,
+            onTap: () => ImageUtils.onShareImg(item.url),
+            child: const Text('分享', style: TextStyle(fontSize: 14)),
+          ),
+        PopupMenuItem(
+          height: 42,
+          onTap: () => ImageUtils.downloadImg([item.url]),
+          child: const Text('保存图片', style: TextStyle(fontSize: 14)),
+        ),
+        if (PlatformUtils.isDesktop)
+          PopupMenuItem(
+            height: 42,
+            onTap: () => PageUtils.launchURL(item.url),
+            child: const Text('网页打开', style: TextStyle(fontSize: 14)),
+          )
+        else if (picArr.length > 1)
+          PopupMenuItem(
+            height: 42,
+            onTap: () =>
+                ImageUtils.downloadImg(picArr.map((item) => item.url).toList()),
+            child: const Text('保存全部', style: TextStyle(fontSize: 14)),
+          ),
+        if (item.isLivePhoto)
+          PopupMenuItem(
+            height: 42,
+            onTap: () => ImageUtils.downloadLivePhoto(
+              url: item.url,
+              liveUrl: item.liveUrl!,
+              width: item.width.toInt(),
+              height: item.height.toInt(),
+            ),
+            child: Text(
+              '保存${Platform.isIOS ? '实况' : '视频'}',
+              style: const TextStyle(fontSize: 14),
+            ),
+          ),
+      ],
     );
   }
 
@@ -163,7 +221,7 @@ class CustomGridView extends StatelessWidget {
         if (width != 1) {
           imageWidth = min(imageWidth, width.toDouble());
         }
-        imageHeight = imageWidth * min(ratioHW, _maxRatio);
+        imageHeight = imageWidth * min(ratioHW, StyleString.imgMaxRatio);
       }
     }
 
@@ -190,38 +248,40 @@ class CustomGridView extends StatelessWidget {
       child: SizedBox(
         width: maxWidth,
         height: imageHeight * row + space * (row - 1),
-        child: CustomMultiChildLayout(
-          delegate: _CustomGridViewDelegate(
-            space: space,
-            itemCount: length,
-            column: column,
-            width: imageWidth,
-            height: imageHeight,
-          ),
+        child: ImageGrid(
+          space: space,
+          column: column,
+          width: imageWidth,
+          height: imageHeight,
           children: List.generate(length, (index) {
             final item = picArr[index];
-            final radius = borderRadius(column, length, index);
+            final borderRadius = _borderRadius(column, length, index);
             return LayoutId(
               id: index,
               child: GestureDetector(
                 onTap: () => onTap(context, index),
+                onSecondaryTapUp: enableImgMenu && PlatformUtils.isDesktop
+                    ? (details) =>
+                          _showMenu(context, details.globalPosition, item)
+                    : null,
+                onLongPressStart: enableImgMenu && PlatformUtils.isMobile
+                    ? (details) =>
+                          _showMenu(context, details.globalPosition, item)
+                    : null,
                 child: Hero(
                   tag: item.url,
                   child: Stack(
                     clipBehavior: Clip.none,
                     alignment: Alignment.center,
                     children: [
-                      ClipRRect(
-                        borderRadius: radius,
-                        child: NetworkImgLayer(
-                          type: .emote,
-                          src: item.url,
-                          width: imageWidth,
-                          height: imageHeight,
-                          alignment: item.isLongPic ? .topCenter : .center,
-                          forceUseCacheWidth: item.width <= item.height,
-                          getPlaceHolder: () => placeHolder,
-                        ),
+                      NetworkImgLayer(
+                        src: item.url,
+                        width: imageWidth,
+                        height: imageHeight,
+                        borderRadius: borderRadius,
+                        alignment: item.isLongPic ? .topCenter : .center,
+                        cacheWidth: item.width <= item.height,
+                        getPlaceHolder: () => placeHolder,
                       ),
                       if (item.isLivePhoto)
                         const PBadge(
@@ -248,42 +308,132 @@ class CustomGridView extends StatelessWidget {
   }
 }
 
-class _CustomGridViewDelegate extends MultiChildLayoutDelegate {
-  _CustomGridViewDelegate({
+class ImageGrid extends MultiChildRenderObjectWidget {
+  const ImageGrid({
+    super.key,
+    super.children,
     required this.space,
-    required this.itemCount,
     required this.column,
     required this.width,
     required this.height,
   });
 
   final double space;
-  final int itemCount;
   final int column;
   final double width;
   final double height;
 
   @override
-  void performLayout(Size size) {
-    final constraints = BoxConstraints.expand(width: width, height: height);
-    for (int i = 0; i < itemCount; i++) {
-      layoutChild(i, constraints);
-      positionChild(
-        i,
-        Offset(
-          (space + width) * (i % column),
-          (space + height) * (i ~/ column),
-        ),
-      );
+  RenderObject createRenderObject(BuildContext context) {
+    return RenderImageGrid(
+      space: space,
+      column: column,
+      width: width,
+      height: height,
+    );
+  }
+
+  @override
+  void updateRenderObject(BuildContext context, RenderImageGrid renderObject) {
+    renderObject
+      ..space = space
+      ..column = column
+      ..width = width
+      ..height = height;
+  }
+}
+
+class RenderImageGrid extends RenderBox
+    with
+        ContainerRenderObjectMixin<RenderBox, MultiChildLayoutParentData>,
+        RenderBoxContainerDefaultsMixin<RenderBox, MultiChildLayoutParentData> {
+  RenderImageGrid({
+    required double space,
+    required int column,
+    required double width,
+    required double height,
+  }) : _space = space,
+       _column = column,
+       _width = width,
+       _height = height;
+
+  double _space;
+  double get space => _space;
+  set space(double value) {
+    if (_space == value) return;
+    _space = value;
+    markNeedsLayout();
+  }
+
+  int _column;
+  int get column => _column;
+  set column(int value) {
+    if (_column == value) return;
+    _column = value;
+    markNeedsLayout();
+  }
+
+  double _width;
+  double get width => _width;
+  set width(double value) {
+    if (_width == value) return;
+    _width = value;
+    markNeedsLayout();
+  }
+
+  double _height;
+  double get height => _height;
+  set height(double value) {
+    if (_height == value) return;
+    _height = value;
+    markNeedsLayout();
+  }
+
+  @override
+  void setupParentData(RenderBox child) {
+    if (child.parentData is! MultiChildLayoutParentData) {
+      child.parentData = MultiChildLayoutParentData();
     }
   }
 
   @override
-  bool shouldRelayout(_CustomGridViewDelegate oldDelegate) {
-    return space != oldDelegate.space ||
-        itemCount != oldDelegate.itemCount ||
-        column != oldDelegate.column ||
-        width != oldDelegate.width ||
-        height != oldDelegate.height;
+  void performLayout() {
+    size = constraints.constrain(constraints.biggest);
+
+    final itemConstraints = BoxConstraints(
+      minWidth: width,
+      maxWidth: width,
+      minHeight: height,
+      maxHeight: height,
+    );
+    RenderBox? child = firstChild;
+    while (child != null) {
+      final childParentData = child.parentData as MultiChildLayoutParentData;
+      final index = childParentData.id as int;
+      child.layout(itemConstraints, parentUsesSize: true);
+      childParentData.offset = Offset(
+        (space + width) * (index % column),
+        (space + height) * (index ~/ column),
+      );
+      child = childParentData.nextSibling;
+    }
   }
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    RenderBox? child = firstChild;
+    while (child != null) {
+      final childParentData = child.parentData as MultiChildLayoutParentData;
+      context.paintChild(child, childParentData.offset + offset);
+      child = childParentData.nextSibling;
+    }
+  }
+
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
+    return defaultHitTestChildren(result, position: position);
+  }
+
+  @override
+  bool get isRepaintBoundary => true;
 }

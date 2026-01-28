@@ -53,12 +53,7 @@ class SavePanel extends StatefulWidget {
         transitionDuration: const Duration(milliseconds: 255),
         transitionBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(
-            opacity: animation.drive(
-              Tween<double>(
-                begin: 0,
-                end: 1,
-              ).chain(CurveTween(curve: Curves.easeInOut)),
-            ),
+            opacity: animation.drive(CurveTween(curve: Curves.easeInOut)),
             child: child,
           );
         },
@@ -290,10 +285,10 @@ class _SavePanelState extends State<SavePanel> {
   }
 
   Future<void> _onSaveOrSharePic([bool isShare = false]) async {
-    if (!isShare && PlatformUtils.isMobile) {
-      if (mounted && !await ImageUtils.checkPermissionDependOnSdkInt(context)) {
-        return;
-      }
+    if (!isShare &&
+        PlatformUtils.isMobile &&
+        !await ImageUtils.checkPermissionDependOnSdkInt()) {
+      return;
     }
     SmartDialog.showLoading();
     try {
@@ -415,7 +410,8 @@ class _SavePanelState extends State<SavePanel> {
                                     src: cover!,
                                     height: coverSize,
                                     width: coverType == _CoverType.def16_9
-                                        ? coverSize * 16 / 9
+                                        ? coverSize *
+                                              StyleString.aspectRatio16x9
                                         : coverSize,
                                     quality: 100,
                                     borderRadius: const BorderRadius.all(

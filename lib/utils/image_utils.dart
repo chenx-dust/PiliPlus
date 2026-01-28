@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:PiliPlus/common/constants.dart';
@@ -50,22 +51,24 @@ abstract final class ImageUtils {
   }
 
   // 获取存储权限
-  static Future<bool> requestStoragePer(BuildContext context) async {
-    await Permission.storage.request();
-    PermissionStatus status = await Permission.storage.status;
+  static Future<bool> requestPer() async {
+    final status = Platform.isAndroid
+        ? await Permission.storage.request()
+        : await Permission.photos.request();
     if (status == PermissionStatus.denied ||
         status == PermissionStatus.permanentlyDenied) {
-      if (!context.mounted) return false;
-      showDialog(
-        context: context,
+      SmartDialog.show(
         builder: (context) {
-          return const AlertDialog(
-            title: Text('提示'),
-            content: Text('存储权限未授权'),
+          return AlertDialog(
+            title: const Text('提示'),
+            content: const Text('存储权限未授权'),
             actions: [
               TextButton(
-                onPressed: openAppSettings,
-                child: Text('去授权'),
+                onPressed: () {
+                  SmartDialog.dismiss();
+                  openAppSettings();
+                },
+                child: const Text('去授权'),
               ),
             ],
           );
@@ -77,42 +80,25 @@ abstract final class ImageUtils {
     }
   }
 
-  // 获取相册权限
-  static Future<bool> requestPhotoPer() async {
-    await Permission.photos.request();
-    PermissionStatus status = await Permission.photos.status;
-    if (status == PermissionStatus.denied ||
-        status == PermissionStatus.permanentlyDenied) {
-      return false;
-    } else {
-      return true;
-    }
-  }
-
-  static Future<bool> checkPermissionDependOnSdkInt(
-    BuildContext context,
-  ) async {
+  static Future<bool> checkPermissionDependOnSdkInt() async {
     if (Platform.isAndroid) {
-      if (await Utils.sdkInt <= 32) {
-        if (!context.mounted) return false;
-        return requestStoragePer(context);
+      if (await Utils.sdkInt < 29) {
+        return requestPer();
       } else {
-        return requestPhotoPer();
+        return true;
       }
     }
-    return requestStoragePer(context);
+    return requestPer();
   }
 
   static Future<bool> downloadLivePhoto({
-    required BuildContext context,
     required String url,
     required String liveUrl,
     required int width,
     required int height,
   }) async {
     try {
-      if (PlatformUtils.isMobile &&
-          !await checkPermissionDependOnSdkInt(context)) {
+      if (PlatformUtils.isMobile && !await checkPermissionDependOnSdkInt()) {
         return false;
       }
       if (!silentDownImg) SmartDialog.showLoading(msg: '正在下载');
@@ -143,7 +129,7 @@ abstract final class ImageUtils {
               },
             );
         if (success) {
-          SmartDialog.showToast(' Live Photo 已保存 ');
+          SmartDialog.showToast(' 已保存 ');
         } else {
           SmartDialog.showToast('保存失败');
           return false;
@@ -167,12 +153,10 @@ abstract final class ImageUtils {
   }
 
   static Future<bool> downloadImg(
-    BuildContext context,
     List<String> imgList, [
     CacheManager? manager,
   ]) async {
-    if (PlatformUtils.isMobile &&
-        !await checkPermissionDependOnSdkInt(context)) {
+    if (PlatformUtils.isMobile && !await checkPermissionDependOnSdkInt()) {
       return false;
     }
     CancelToken? cancelToken;
@@ -215,6 +199,7 @@ abstract final class ImageUtils {
         }
       });
       final result = await Future.wait(futures, eagerError: true);
+      bool success = true;
       if (PlatformUtils.isMobile) {
         final delList = <String>[];
         final saveList = <SaveFileData>[];
@@ -228,6 +213,8 @@ abstract final class ImageUtils {
                 androidRelativePath: _androidRelativePath,
               ),
             );
+          } else {
+            success = false;
           }
         }
         await SaverGallery.saveFiles(saveList, skipIfExists: false);
@@ -242,6 +229,8 @@ abstract final class ImageUtils {
               fileName: res.name,
               del: res.del,
             );
+          } else {
+            success = false;
           }
         }
       }
@@ -249,9 +238,9 @@ abstract final class ImageUtils {
         SmartDialog.showToast('已取消下载');
         return false;
       } else {
-        SmartDialog.showToast('图片已保存');
+        SmartDialog.showToast(success ? ' 已保存 ' : '保存失败');
       }
-      return true;
+      return success;
     } catch (e) {
       if (cancelToken?.isCancelled == true) {
         SmartDialog.showToast('已取消下载');
@@ -279,22 +268,23 @@ abstract final class ImageUtils {
     r'(@(\d+[a-z]_?)*)(\..*)?$',
     caseSensitive: false,
   );
-  static String thumbnailUrl(String? src, [int? quality]) {
-    if (src != null && quality != 100) {
+  static String thumbnailUrl(String? src, [int maxQuality = 1]) {
+    if (src != null && maxQuality != 100) {
+      maxQuality = math.max(maxQuality, GlobalData().imgQuality);
       bool hasMatch = false;
       src = src.splitMapJoin(
         _thumbRegex,
-        onMatch: (Match match) {
+        onMatch: (match) {
           hasMatch = true;
           String suffix = match.group(3) ?? '.webp';
-          return '${match.group(1)}_${quality ?? GlobalData().imgQuality}q$suffix';
+          return '${match.group(1)}_${maxQuality}q$suffix';
         },
         onNonMatch: (String str) {
           return str;
         },
       );
       if (!hasMatch) {
-        src += '@${quality ?? GlobalData().imgQuality}q.webp';
+        src += '@${maxQuality}q.webp';
       }
     }
     return src.http2https;

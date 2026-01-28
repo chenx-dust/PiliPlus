@@ -59,11 +59,31 @@ class _AboutPageState extends State<AboutPage> {
     super.dispose();
   }
 
-  Future<void> getCacheSize() async {
-    cacheSize.value = CacheManager.formatSize(
-      await CacheManager.loadApplicationCache(),
-    );
+  void getCacheSize() {
+    CacheManager.loadApplicationCache().then((res) {
+      if (mounted) {
+        cacheSize.value = CacheManager.formatSize(res);
+      }
+    });
   }
+
+  void _showDialog() => showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        constraints: StyleString.dialogFixedConstraints,
+        content: TextField(
+          autofocus: true,
+          onSubmitted: (value) {
+            Get.back();
+            if (value.isNotEmpty) {
+              PageUtils.handleWebview(value, inApp: true);
+            }
+          },
+        ),
+      );
+    },
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -85,35 +105,18 @@ class _AboutPageState extends State<AboutPage> {
         children: [
           GestureDetector(
             onTap: () {
-              _pressCount++;
-              if (_pressCount == 5) {
+              if (++_pressCount == 5) {
                 _pressCount = 0;
-                showDialog(
-                  context: context,
-                  builder: (context) {
-                    return AlertDialog(
-                      constraints: StyleString.dialogFixedConstraints,
-                      content: TextField(
-                        autofocus: true,
-                        onSubmitted: (value) {
-                          Get.back();
-                          if (value.isNotEmpty) {
-                            PageUtils.handleWebview(value, inApp: true);
-                          }
-                        },
-                      ),
-                    );
-                  },
-                );
+                _showDialog();
               }
             },
-            child: ExcludeSemantics(
-              child: Image.asset(
-                width: 150,
-                height: 150,
-                cacheWidth: 150.cacheSize(context),
-                'assets/images/logo/logo.png',
-              ),
+            onSecondaryTap: PlatformUtils.isDesktop ? _showDialog : null,
+            child: Image.asset(
+              width: 150,
+              height: 150,
+              excludeFromSemantics: true,
+              cacheWidth: 150.cacheSize(context),
+              'assets/images/logo/logo.png',
             ),
           ),
           ListTile(
