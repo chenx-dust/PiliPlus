@@ -1179,10 +1179,10 @@ packages:
     description:
       path: media_kit_video
       ref: PiliPlus
-      resolved-ref: "6988bc699e7e7be23c58b7f095db9bf45e921147"
+      resolved-ref: ee29ad83ffc746f2054d610c1191399f90992fe5
       url: "https://github.com/chenx-dust/media-kit.git"
     source: git
-    version: "2.0.0"
+    version: "2.0.1"
   menu_base:
     dependency: transitive
     description:
