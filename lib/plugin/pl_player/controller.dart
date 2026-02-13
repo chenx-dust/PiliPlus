@@ -829,7 +829,7 @@ class PlPlayerController with BlockConfigMixin {
     } else {
       audioUri = '';
     }
-    if (audioUri.isNotEmpty) extras['audio-files'] = '"$audioUri"';
+    await pp.setProperty('audio-files', audioUri);
 
     _videoController ??= VideoController(
       player,
@@ -914,14 +914,16 @@ class PlPlayerController with BlockConfigMixin {
       SmartDialog.showToast('视频源为空，请重新进入本页面');
       return false;
     }
-    String? audioUri;
     if (!isLive) {
       if (dataSource.audioSource.isNullOrEmpty) {
         SmartDialog.showToast('音频源为空');
       } else {
-        audioUri = Platform.isWindows
-            ? dataSource.audioSource!.replaceAll(';', '\\;')
-            : dataSource.audioSource!.replaceAll(':', '\\:');
+        await (_videoPlayerController!.platform! as NativePlayer).setProperty(
+          'audio-files',
+          Platform.isWindows
+              ? dataSource.audioSource!.replaceAll(';', '\\;')
+              : dataSource.audioSource!.replaceAll(':', '\\:'),
+        );
       }
     }
     await _videoPlayerController!.open(
@@ -929,7 +931,6 @@ class PlPlayerController with BlockConfigMixin {
         dataSource.videoSource!,
         httpHeaders: dataSource.httpHeaders,
         start: position,
-        extras: audioUri == null ? null : {'audio-files': '"$audioUri"'},
       ),
       play: true,
     );

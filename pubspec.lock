@@ -1121,10 +1121,11 @@ packages:
   media_kit:
     dependency: "direct main"
     description:
-      name: media_kit
-      sha256: ae9e79597500c7ad6083a3c7b7b7544ddabfceacce7ae5c9709b0ec16a5d6643
-      url: "https://pub.dev"
-    source: hosted
+      path: media_kit
+      ref: PiliPlus
+      resolved-ref: "926ffba7d3aa935d47c4a24ebdf41b8d7852cea4"
+      url: "https://github.com/chenx-dust/media-kit.git"
+    source: git
     version: "1.2.6"
   media_kit_libs_android_video:
     dependency: transitive
