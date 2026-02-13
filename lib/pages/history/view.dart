@@ -26,10 +26,16 @@ class HistoryPage extends StatefulWidget {
 
 class _HistoryPageState extends State<HistoryPage>
     with AutomaticKeepAliveClientMixin, GridMixin {
-  late final _historyController = Get.put(
-    HistoryController(widget.type),
-    tag: widget.type ?? 'all',
-  );
+  late final HistoryController _historyController;
+
+  @override
+  void initState() {
+    super.initState();
+    _historyController = Get.put(
+      HistoryController(widget.type),
+      tag: widget.type ?? 'all',
+    );
+  }
 
   HistoryController currCtr([int? index]) {
     try {
@@ -133,7 +139,7 @@ class _HistoryPageState extends State<HistoryPage>
                             : const CustomTabBarViewScrollPhysics(),
                         controller: _historyController.tabController,
                         horizontalDragGestureRecognizer:
-                            CustomHorizontalDragGestureRecognizer(),
+                            CustomHorizontalDragGestureRecognizer.new,
                         children: [
                           KeepAliveWrapper(builder: (context) => child),
                           ..._historyController.tabs.map(

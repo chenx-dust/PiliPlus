@@ -17,6 +17,7 @@ abstract final class SettingBoxKey {
       expandBuffer = 'expandBuffer',
       hardwareDecoding = 'hardwareDecoding',
       videoSync = 'videoSync',
+      autosync = 'autosync',
       videoOutput = 'videoOutput',
       p1080 = 'p1080',
       enableAutoEnter = 'enableAutoEnter',

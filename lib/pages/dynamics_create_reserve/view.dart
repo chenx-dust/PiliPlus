@@ -1,4 +1,4 @@
-import 'package:PiliPlus/common/widgets/flutter/time_picker.dart';
+import 'package:PiliPlus/common/widgets/time_picker.dart';
 import 'package:PiliPlus/pages/dynamics_create_reserve/controller.dart';
 import 'package:PiliPlus/utils/date_utils.dart';
 import 'package:PiliPlus/utils/utils.dart';
@@ -18,11 +18,17 @@ class CreateReservePage extends StatefulWidget {
 }
 
 class _CreateReservePageState extends State<CreateReservePage> {
-  late final _controller = Get.put(
-    CreateReserveController(widget.sid),
-    tag: Utils.generateRandomString(6),
-  );
+  late final CreateReserveController _controller;
   late TextStyle _leadingStyle;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = Get.put(
+      CreateReserveController(widget.sid),
+      tag: Utils.generateRandomString(6),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

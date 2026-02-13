@@ -6,7 +6,6 @@ import 'dart:math';
 import 'package:PiliPlus/common/constants.dart';
 import 'package:PiliPlus/common/widgets/button/icon_button.dart';
 import 'package:PiliPlus/common/widgets/custom_icon.dart';
-import 'package:PiliPlus/common/widgets/custom_sliver_persistent_header_delegate.dart';
 import 'package:PiliPlus/common/widgets/dialog/report.dart';
 import 'package:PiliPlus/common/widgets/marquee.dart';
 import 'package:PiliPlus/http/danmaku.dart';
@@ -24,6 +23,7 @@ import 'package:PiliPlus/models/video/play/url.dart';
 import 'package:PiliPlus/models_new/video/video_play_info/subtitle.dart';
 import 'package:PiliPlus/pages/common/common_intro_controller.dart';
 import 'package:PiliPlus/pages/danmaku/danmaku_model.dart';
+import 'package:PiliPlus/pages/setting/widgets/popup_item.dart';
 import 'package:PiliPlus/pages/setting/widgets/select_dialog.dart';
 import 'package:PiliPlus/pages/video/controller.dart';
 import 'package:PiliPlus/pages/video/introduction/local/controller.dart';
@@ -36,6 +36,8 @@ import 'package:PiliPlus/plugin/pl_player/controller.dart';
 import 'package:PiliPlus/plugin/pl_player/models/play_repeat.dart';
 import 'package:PiliPlus/plugin/pl_player/utils/fullscreen.dart';
 import 'package:PiliPlus/services/service_locator.dart';
+import 'package:PiliPlus/services/shutdown_timer_service.dart'
+    show shutdownTimerService;
 import 'package:PiliPlus/utils/accounts.dart';
 import 'package:PiliPlus/utils/accounts/account.dart';
 import 'package:PiliPlus/utils/extension/iterable_ext.dart';
@@ -419,7 +421,10 @@ class HeaderControlState extends State<HeaderControl>
                   dense: true,
                   onTap: () {
                     Get.back();
-                    PageUtils.scheduleExit(this.context, isFullScreen);
+                    shutdownTimerService.showScheduleExitDialog(
+                      this.context,
+                      isFullScreen: isFullScreen,
+                    );
                   },
                   leading: const Icon(Icons.hourglass_top_outlined, size: 20),
                   title: const Text('定时关闭', style: titleStyle),
@@ -450,79 +455,25 @@ class HeaderControlState extends State<HeaderControl>
                     title: const Text('重载视频', style: titleStyle),
                   ),
                 ],
-                ListTile(
+                PopupListTile<SuperResolutionType>(
                   dense: true,
                   leading: const Icon(
                     Icons.stay_current_landscape_outlined,
                     size: 20,
                   ),
-                  title: Row(
-                    children: [
-                      const Text(
-                        '超分辨率',
-                        strutStyle: StrutStyle(leading: 0, height: 1),
-                        style: TextStyle(
-                          height: 1,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Builder(
-                        builder: (context) => PopupMenuButton(
-                          initialValue:
-                              plPlayerController.superResolutionType.value,
-                          child: Padding(
-                            padding: const EdgeInsets.all(4),
-                            child: Text.rich(
-                              style: TextStyle(
-                                height: 1,
-                                fontSize: 14,
-                                color: theme.colorScheme.secondary,
-                              ),
-                              strutStyle: const StrutStyle(
-                                leading: 0,
-                                height: 1,
-                                fontSize: 14,
-                              ),
-                              TextSpan(
-                                children: [
-                                  TextSpan(
-                                    text: widget
-                                        .controller
-                                        .superResolutionType
-                                        .value
-                                        .title,
-                                  ),
-                                  WidgetSpan(
-                                    alignment: .middle,
-                                    child: Icon(
-                                      MdiIcons.unfoldMoreHorizontal,
-                                      size: 14,
-                                      color: theme.colorScheme.secondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          onSelected: (value) {
-                            plPlayerController.setShader(value);
-                            if (context.mounted) {
-                              (context as Element).markNeedsBuild();
-                            }
-                          },
-                          itemBuilder: (context) => SuperResolutionType.values
-                              .map(
-                                (item) => PopupMenuItem(
-                                  value: item,
-                                  child: Text(item.title),
-                                ),
-                              )
-                              .toList(),
-                        ),
-                      ),
-                    ],
+                  title: const Text('超分辨率'),
+                  value: () {
+                    final value = plPlayerController.superResolutionType.value;
+                    return (value, value.label);
+                  },
+                  itemBuilder: (_) => enumItemBuilder<SuperResolutionType>(
+                    SuperResolutionType.values,
                   ),
+                  onSelected: (value, setState) {
+                    plPlayerController.setShader(value);
+                    setState();
+                  },
+                  descPosType: .title,
                 ),
                 if (!isFileSource)
                   ListTile(
@@ -537,11 +488,9 @@ class HeaderControlState extends State<HeaderControl>
                       Get.back();
                       final result = await showDialog<CDNService>(
                         context: context,
-                        builder: (context) {
-                          return CdnSelectDialog(
-                            sample: videoInfo.dash?.video?.firstOrNull,
-                          );
-                        },
+                        builder: (context) => CdnSelectDialog(
+                          sample: videoInfo.dash?.video?.firstOrNull,
+                        ),
                       );
                       if (result != null) {
                         VideoUtils.cdnService = result;
@@ -676,7 +625,7 @@ class HeaderControlState extends State<HeaderControl>
                   leading: const Icon(Icons.repeat, size: 20),
                   title: const Text('播放顺序', style: titleStyle),
                   subtitle: Text(
-                    plPlayerController.playRepeat.desc,
+                    plPlayerController.playRepeat.label,
                     style: subTitleStyle,
                   ),
                 ),
@@ -712,13 +661,12 @@ class HeaderControlState extends State<HeaderControl>
                   onTap: () async {
                     Get.back();
                     try {
-                      final FilePickerResult? file = await FilePicker.platform
-                          .pickFiles();
-                      if (file != null) {
-                        final first = file.files.first;
-                        final path = first.path;
+                      final result = await FilePicker.platform.pickFiles();
+                      if (result != null) {
+                        final file = result.files.single;
+                        final path = file.path;
                         if (path != null) {
-                          final name = first.name;
+                          final name = file.name;
                           final length = videoDetailCtr.subtitles.length;
                           if (name.endsWith('.json')) {
                             final file = File(path);
@@ -1231,68 +1179,66 @@ class HeaderControlState extends State<HeaderControl>
   void onExportSubtitle() {
     showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          clipBehavior: Clip.hardEdge,
-          contentPadding: const EdgeInsets.fromLTRB(0, 12, 0, 12),
-          title: const Text('保存字幕'),
-          content: SingleChildScrollView(
-            child: Column(
-              children: videoDetailCtr.subtitles
-                  .map(
-                    (item) => ListTile(
-                      dense: true,
-                      onTap: () async {
-                        Get.back();
-                        final url = item.subtitleUrl;
-                        if (url == null || url.isEmpty) return;
-                        try {
-                          final res = await Request.dio.get<Uint8List>(
-                            url.http2https,
-                            options: Options(
-                              responseType: ResponseType.bytes,
-                              headers: Constants.baseHeaders,
-                              extra: {'account': const NoAccount()},
+      builder: (context) => AlertDialog(
+        clipBehavior: Clip.hardEdge,
+        contentPadding: const EdgeInsets.fromLTRB(0, 12, 0, 12),
+        title: const Text('保存字幕'),
+        content: SingleChildScrollView(
+          child: Column(
+            children: videoDetailCtr.subtitles
+                .map(
+                  (item) => ListTile(
+                    dense: true,
+                    onTap: () async {
+                      Get.back();
+                      final url = item.subtitleUrl;
+                      if (url == null || url.isEmpty) return;
+                      try {
+                        final res = await Request.dio.get<Uint8List>(
+                          url.http2https,
+                          options: Options(
+                            responseType: ResponseType.bytes,
+                            headers: Constants.baseHeaders,
+                            extra: {'account': const NoAccount()},
+                          ),
+                        );
+                        if (res.statusCode == 200) {
+                          final bytes = Uint8List.fromList(
+                            Request.responseBytesDecoder(
+                              res.data!,
+                              res.headers.map,
                             ),
                           );
-                          if (res.statusCode == 200) {
-                            final bytes = Uint8List.fromList(
-                              Request.responseBytesDecoder(
-                                res.data!,
-                                res.headers.map,
-                              ),
-                            );
-                            String name =
-                                '${introController.videoDetail.value.title}-${videoDetailCtr.bvid}-${videoDetailCtr.cid.value}-${item.lanDoc}.json';
-                            if (Platform.isWindows) {
-                              // Reserved characters may not be used in file names. See: https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file#naming-conventions
-                              name = name.replaceAll(
-                                RegExp(r'[<>:/\\|?*"]'),
-                                '',
-                              );
-                            }
-                            Utils.saveBytes2File(
-                              name: name,
-                              bytes: bytes,
-                              allowedExtensions: const ['json'],
+                          String name =
+                              '${introController.videoDetail.value.title}-${videoDetailCtr.bvid}-${videoDetailCtr.cid.value}-${item.lanDoc}.json';
+                          if (Platform.isWindows) {
+                            // Reserved characters may not be used in file names. See: https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file#naming-conventions
+                            name = name.replaceAll(
+                              RegExp(r'[<>:/\\|?*"]'),
+                              '',
                             );
                           }
-                        } catch (e, s) {
-                          Utils.reportError(e, s);
-                          SmartDialog.showToast(e.toString());
+                          Utils.saveBytes2File(
+                            name: name,
+                            bytes: bytes,
+                            allowedExtensions: const ['json'],
+                          );
                         }
-                      },
-                      title: Text(
-                        item.lanDoc!,
-                        style: const TextStyle(fontSize: 14),
-                      ),
+                      } catch (e, s) {
+                        Utils.reportError(e, s);
+                        SmartDialog.showToast(e.toString());
+                      }
+                    },
+                    title: Text(
+                      item.lanDoc!,
+                      style: const TextStyle(fontSize: 14),
                     ),
-                  )
-                  .toList(),
-            ),
+                  ),
+                )
+                .toList(),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -1585,49 +1531,55 @@ class HeaderControlState extends State<HeaderControl>
     if (ctr == null) return;
     showBottomSheet((context, setState) {
       final theme = Theme.of(context);
-      return Padding(
-        padding: const EdgeInsets.all(12),
-        child: Material(
-          clipBehavior: Clip.hardEdge,
+      return Container(
+        margin: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
           color: theme.colorScheme.surface,
           borderRadius: const BorderRadius.all(Radius.circular(12)),
-          child: CustomScrollView(
-            slivers: [
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: CustomSliverPersistentHeaderDelegate(
-                  child: Container(
-                    height: 45,
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(
-                          color: theme.colorScheme.outline.withValues(
-                            alpha: 0.1,
-                          ),
-                        ),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('弹幕列表'),
-                        iconButton(
-                          onPressed: () => setState(() {}),
-                          icon: const Icon(Icons.refresh),
-                        ),
-                      ],
-                    ),
+        ),
+        child: Column(
+          children: [
+            Container(
+              height: 45,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: theme.colorScheme.outline.withValues(alpha: 0.1),
                   ),
-                  bgColor: theme.colorScheme.surface,
                 ),
               ),
-              ?_buildDanmakuList(ctr.staticDanmaku.nonNulls.toList()),
-              ?_buildDanmakuList(ctr.scrollDanmaku.expand((e) => e).toList()),
-              ?_buildDanmakuList(ctr.specialDanmaku.toList()),
-              const SliverToBoxAdapter(child: SizedBox(height: 12)),
-            ],
-          ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('弹幕列表'),
+                  iconButton(
+                    onPressed: () => setState(() {}),
+                    icon: const Icon(Icons.refresh),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Material(
+                type: .transparency,
+                clipBehavior: .hardEdge,
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(12),
+                ),
+                child: CustomScrollView(
+                  slivers: [
+                    ?_buildDanmakuList(ctr.staticDanmaku.nonNulls.toList()),
+                    ?_buildDanmakuList(
+                      ctr.scrollDanmaku.expand((e) => e).toList(),
+                    ),
+                    ?_buildDanmakuList(ctr.specialDanmaku.toList()),
+                    const SliverToBoxAdapter(child: SizedBox(height: 12)),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       );
     });
@@ -1744,7 +1696,7 @@ class HeaderControlState extends State<HeaderControl>
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 20,
                       ),
-                      title: Text(i.desc),
+                      title: Text(i.label),
                       trailing: plPlayerController.playRepeat == i
                           ? Icon(
                               Icons.done,
@@ -1777,6 +1729,7 @@ class HeaderControlState extends State<HeaderControl>
             ((!horizontalScreen || plPlayerController.isDesktopPip) &&
                 !isPortrait))) {
       title = Padding(
+        key: titleKey,
         padding: isPortrait
             ? EdgeInsets.zero
             : const EdgeInsets.only(right: 10),
@@ -1796,7 +1749,6 @@ class HeaderControlState extends State<HeaderControl>
                   videoDetail.title!;
             }
             return MarqueeText(
-              key: titleKey,
               title,
               spacing: 30,
               velocity: 30,
@@ -1831,6 +1783,11 @@ class HeaderControlState extends State<HeaderControl>
     } else {
       title = const Spacer();
     }
+
+    const btnWidth = 40.0;
+    const btnHeight = 34.0;
+    const btnStyle = ButtonStyle(padding: WidgetStatePropertyAll(.zero));
+
     return AppBar(
       elevation: 0,
       scrolledUnderElevation: 0,
@@ -1846,10 +1803,11 @@ class HeaderControlState extends State<HeaderControl>
           Row(
             children: [
               SizedBox(
-                width: 42,
-                height: 34,
+                width: btnWidth,
+                height: btnHeight,
                 child: IconButton(
                   tooltip: '返回',
+                  style: btnStyle,
                   icon: const Icon(
                     FontAwesomeIcons.arrowLeft,
                     size: 15,
@@ -1875,10 +1833,11 @@ class HeaderControlState extends State<HeaderControl>
               if (!plPlayerController.isDesktopPip &&
                   (!isFullScreen || !isPortrait))
                 SizedBox(
-                  width: 42,
-                  height: 34,
+                  width: btnWidth,
+                  height: btnHeight,
                   child: IconButton(
                     tooltip: '返回主页',
+                    style: btnStyle,
                     icon: const Icon(
                       FontAwesomeIcons.house,
                       size: 15,
@@ -1899,13 +1858,11 @@ class HeaderControlState extends State<HeaderControl>
                 Obx(() {
                   final isAlwaysOnTop = plPlayerController.isAlwaysOnTop.value;
                   return SizedBox(
-                    width: 42,
-                    height: 34,
+                    width: btnWidth,
+                    height: btnHeight,
                     child: IconButton(
+                      style: btnStyle,
                       tooltip: '${isAlwaysOnTop ? '取消' : ''}置顶',
-                      style: const ButtonStyle(
-                        padding: WidgetStatePropertyAll(EdgeInsets.zero),
-                      ),
                       onPressed: () =>
                           plPlayerController.setAlwaysOnTop(!isAlwaysOnTop),
                       icon: isAlwaysOnTop
@@ -1926,13 +1883,11 @@ class HeaderControlState extends State<HeaderControl>
                 if (!isFSOrPip) ...[
                   if (videoDetailCtr.isUgc)
                     SizedBox(
-                      width: 42,
-                      height: 34,
+                      width: btnWidth,
+                      height: btnHeight,
                       child: IconButton(
                         tooltip: '听音频',
-                        style: const ButtonStyle(
-                          padding: WidgetStatePropertyAll(EdgeInsets.zero),
-                        ),
+                        style: btnStyle,
                         onPressed: videoDetailCtr.toAudioPage,
                         icon: const Icon(
                           Icons.headphones_outlined,
@@ -1942,13 +1897,11 @@ class HeaderControlState extends State<HeaderControl>
                       ),
                     ),
                   SizedBox(
-                    width: 42,
-                    height: 34,
+                    width: btnWidth,
+                    height: btnHeight,
                     child: IconButton(
                       tooltip: '投屏',
-                      style: const ButtonStyle(
-                        padding: WidgetStatePropertyAll(EdgeInsets.zero),
-                      ),
+                      style: btnStyle,
                       onPressed: videoDetailCtr.onCast,
                       icon: const Icon(
                         Icons.cast,
@@ -1960,13 +1913,11 @@ class HeaderControlState extends State<HeaderControl>
                 ],
                 if (plPlayerController.enableSponsorBlock)
                   SizedBox(
-                    width: 42,
-                    height: 34,
+                    width: btnWidth,
+                    height: btnHeight,
                     child: IconButton(
                       tooltip: '提交片段',
-                      style: const ButtonStyle(
-                        padding: WidgetStatePropertyAll(EdgeInsets.zero),
-                      ),
+                      style: btnStyle,
                       onPressed: () => videoDetailCtr.onBlock(context),
                       icon: const Stack(
                         clipBehavior: Clip.none,
@@ -1989,15 +1940,12 @@ class HeaderControlState extends State<HeaderControl>
                 Obx(
                   () => videoDetailCtr.segmentProgressList.isNotEmpty
                       ? SizedBox(
-                          width: 42,
-                          height: 34,
+                          width: btnWidth,
+                          height: btnHeight,
                           child: IconButton(
                             tooltip: '片段信息',
-                            style: const ButtonStyle(
-                              padding: WidgetStatePropertyAll(EdgeInsets.zero),
-                            ),
-                            onPressed: () =>
-                                videoDetailCtr.showSBDetail(context),
+                            style: btnStyle,
+                            onPressed: videoDetailCtr.showSBDetail,
                             icon: const Icon(
                               MdiIcons.advertisements,
                               size: 19,
@@ -2010,13 +1958,11 @@ class HeaderControlState extends State<HeaderControl>
               ],
               if (isFullScreen || PlatformUtils.isDesktop) ...[
                 SizedBox(
-                  width: 42,
-                  height: 34,
+                  width: btnWidth,
+                  height: btnHeight,
                   child: IconButton(
                     tooltip: '发弹幕',
-                    style: const ButtonStyle(
-                      padding: WidgetStatePropertyAll(EdgeInsets.zero),
-                    ),
+                    style: btnStyle,
                     onPressed: videoDetailCtr.showShootDanmakuSheet,
                     icon: const Icon(
                       Icons.comment_outlined,
@@ -2026,17 +1972,15 @@ class HeaderControlState extends State<HeaderControl>
                   ),
                 ),
                 SizedBox(
-                  width: 42,
-                  height: 34,
+                  width: btnWidth,
+                  height: btnHeight,
                   child: Obx(
                     () {
                       final enableShowDanmaku =
                           plPlayerController.enableShowDanmaku.value;
                       return IconButton(
                         tooltip: "${enableShowDanmaku ? '关闭' : '开启'}弹幕",
-                        style: const ButtonStyle(
-                          padding: WidgetStatePropertyAll(EdgeInsets.zero),
-                        ),
+                        style: btnStyle,
                         onPressed: () {
                           final newVal = !enableShowDanmaku;
                           plPlayerController.enableShowDanmaku.value = newVal;
@@ -2063,23 +2007,34 @@ class HeaderControlState extends State<HeaderControl>
                   ),
                 ),
               ],
+              SizedBox(
+                width: btnWidth,
+                height: btnHeight,
+                child: IconButton(
+                  tooltip: '弹幕设置',
+                  style: btnStyle,
+                  onPressed: showSetDanmaku,
+                  icon: const Icon(
+                    size: 20,
+                    CustomIcons.dm_settings,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
               if (Platform.isAndroid ||
                   (PlatformUtils.isDesktop && !isFullScreen))
                 SizedBox(
-                  width: 42,
-                  height: 34,
+                  width: btnWidth,
+                  height: btnHeight,
                   child: IconButton(
                     tooltip: '画中画',
-                    style: const ButtonStyle(
-                      padding: WidgetStatePropertyAll(EdgeInsets.zero),
-                    ),
+                    style: btnStyle,
                     onPressed: () async {
                       if (PlatformUtils.isDesktop) {
                         plPlayerController.toggleDesktopPip();
                         return;
                       }
                       if (await Floating().isPipAvailable) {
-                        plPlayerController.showControls.value = false;
                         if (context.mounted &&
                             !videoPlayerServiceHandler!.enableBackgroundPlay) {
                           final theme = Theme.of(context);
@@ -2166,13 +2121,11 @@ class HeaderControlState extends State<HeaderControl>
                   ),
                 ),
               SizedBox(
-                width: 42,
-                height: 34,
+                width: btnWidth,
+                height: btnHeight,
                 child: IconButton(
                   tooltip: "更多设置",
-                  style: const ButtonStyle(
-                    padding: WidgetStatePropertyAll(EdgeInsets.zero),
-                  ),
+                  style: btnStyle,
                   onPressed: showSettingSheet,
                   icon: const Icon(
                     Icons.more_vert_outlined,
@@ -2189,8 +2142,8 @@ class HeaderControlState extends State<HeaderControl>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(
-                  width: 42,
-                  height: 34,
+                  width: btnWidth,
+                  height: btnHeight,
                   child: Obx(
                     () => ActionItem(
                       expand: false,
@@ -2219,8 +2172,8 @@ class HeaderControlState extends State<HeaderControl>
                 ),
                 if (introController case final UgcIntroController ugc)
                   SizedBox(
-                    width: 42,
-                    height: 34,
+                    width: btnWidth,
+                    height: btnHeight,
                     child: Obx(
                       () => ActionItem(
                         expand: false,
@@ -2238,8 +2191,8 @@ class HeaderControlState extends State<HeaderControl>
                     ),
                   ),
                 SizedBox(
-                  width: 42,
-                  height: 34,
+                  width: btnWidth,
+                  height: btnHeight,
                   child: Obx(
                     () => ActionItem(
                       expand: false,
@@ -2256,8 +2209,8 @@ class HeaderControlState extends State<HeaderControl>
                   ),
                 ),
                 SizedBox(
-                  width: 42,
-                  height: 34,
+                  width: btnWidth,
+                  height: btnHeight,
                   child: Obx(
                     () => ActionItem(
                       expand: false,
@@ -2278,8 +2231,8 @@ class HeaderControlState extends State<HeaderControl>
                   ),
                 ),
                 SizedBox(
-                  width: 42,
-                  height: 34,
+                  width: btnWidth,
+                  height: btnHeight,
                   child: ActionItem(
                     expand: false,
                     icon: const Icon(

@@ -4,11 +4,14 @@
 
 import 'dart:math' as math;
 
-import 'package:PiliPlus/common/widgets/flutter/text_intro/tap_and_drag.dart';
+import 'package:PiliPlus/common/widgets/flutter/selectable_text/tap_and_drag.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart'
-    hide BaseTapAndDragGestureRecognizer, TapAndHorizontalDragGestureRecognizer;
-import 'package:flutter/material.dart';
+    hide
+        BaseTapAndDragGestureRecognizer,
+        TapAndHorizontalDragGestureRecognizer,
+        TapAndPanGestureRecognizer;
+import 'package:flutter/material.dart' hide TextSelectionGestureDetector;
 
 class CustomTextSelectionGestureDetectorBuilder
     extends TextSelectionGestureDetectorBuilder {
@@ -307,8 +310,7 @@ class _TextSelectionGestureDetectorState
 
   @override
   Widget build(BuildContext context) {
-    final Map<Type, GestureRecognizerFactory> gestures =
-        <Type, GestureRecognizerFactory>{};
+    final gestures = <Type, GestureRecognizerFactory>{};
 
     gestures[TapGestureRecognizer] =
         GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
