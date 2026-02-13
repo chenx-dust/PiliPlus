@@ -252,11 +252,11 @@ abstract final class Pref {
   );
 
   static String get videoSync =>
-      _setting.get(SettingBoxKey.videoSync, defaultValue: 'display-resample');
+      _setting.get(SettingBoxKey.videoSync, defaultValue: 'display-resample-vdrop');
 
   static String get autosync => _setting.get(
     SettingBoxKey.autosync,
-    defaultValue: Platform.isAndroid ? '30' : '0',
+    defaultValue: '0',
   );
 
   static String get videoOutput => _setting.get(
