@@ -814,8 +814,6 @@ class PlPlayerController with BlockConfigMixin {
       }
     }
 
-    final Map<String, String> extras = {};
-
     // 音轨
     final String audioUri;
     if (isFileSource) {
@@ -845,7 +843,8 @@ class PlPlayerController with BlockConfigMixin {
 
     player.setPlaylistMode(looping);
 
-    if (kDebugMode || Platform.isAndroid) {
+    final Map<String, String>? filters;
+    if (Platform.isAndroid) {
       String audioNormalization = AudioNormalization.getParamFromConfig(
         Pref.audioNormalization,
       );
@@ -868,9 +867,11 @@ class PlPlayerController with BlockConfigMixin {
           AudioNormalization.getParamFromConfig(Pref.fallbackNormalization),
         );
       }
-      if (audioNormalization.isNotEmpty) {
-        extras['lavfi-complex'] = '"[aid1] $audioNormalization [ao]"';
-      }
+      filters = audioNormalization.isEmpty
+          ? null
+          : {'lavfi-complex': '"[aid1] $audioNormalization [ao]"'};
+    } else {
+      filters = null;
     }
 
     // if (kDebugMode) debugPrint(filters.toString());
@@ -894,7 +895,7 @@ class PlPlayerController with BlockConfigMixin {
         videoUri,
         httpHeaders: dataSource.httpHeaders,
         start: seekTo,
-        extras: extras.isEmpty ? null : extras,
+        extras: filters,
       ),
       play: false,
     );
@@ -918,7 +919,7 @@ class PlPlayerController with BlockConfigMixin {
       if (dataSource.audioSource.isNullOrEmpty) {
         SmartDialog.showToast('音频源为空');
       } else {
-        await (_videoPlayerController!.platform! as NativePlayer).setProperty(
+        await (_videoPlayerController!.platform!).setProperty(
           'audio-files',
           Platform.isWindows
               ? dataSource.audioSource!.replaceAll(';', '\\;')
