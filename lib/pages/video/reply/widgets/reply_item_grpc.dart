@@ -170,7 +170,19 @@ class ReplyItemGrpc extends StatelessWidget {
   }
 
   Widget content(BuildContext context, ThemeData theme) {
-    final padding = EdgeInsets.only(left: replyLevel == 0 ? 6 : 45, right: 6);
+    return LayoutBuilder(
+        builder: (context, constraints) {
+          final conciseMode = constraints.maxWidth <= 320;
+          return contentImpl(context, theme, conciseMode);
+        }
+    );
+  }
+
+  Widget contentImpl(BuildContext context, ThemeData theme, bool conciseMode) {
+    final padding = EdgeInsets.only(
+      left: replyLevel == 0 ? 6 : (conciseMode ? 6 : 45),
+      right: 6,
+    );
     return Column(
       mainAxisSize: .min,
       crossAxisAlignment: .start,
@@ -318,12 +330,12 @@ class ReplyItemGrpc extends StatelessWidget {
         ],
         if (replyLevel != 0) ...[
           const SizedBox(height: 4),
-          buttonAction(context, theme, replyItem.replyControl),
+          buttonAction(context, theme, conciseMode, replyItem.replyControl),
         ],
         if (replyLevel == 1 && replyItem.count > Int64.ZERO) ...[
           Padding(
             padding: const EdgeInsets.only(top: 5, bottom: 12),
-            child: replyItemRow(context, theme, replyItem.replies),
+            child: replyItemRow(context, theme, conciseMode, replyItem.replies),
           ),
         ],
       ],
@@ -333,6 +345,7 @@ class ReplyItemGrpc extends StatelessWidget {
   Widget buttonAction(
     BuildContext context,
     ThemeData theme,
+    bool conciseMode,
     ReplyControl replyControl,
   ) {
     final textStyle = TextStyle(
@@ -347,7 +360,7 @@ class ReplyItemGrpc extends StatelessWidget {
     );
     return Row(
       children: <Widget>[
-        const SizedBox(width: 36),
+        if (!conciseMode) const SizedBox(width: 36),
         SizedBox(
           height: 32,
           child: TextButton(
@@ -409,12 +422,13 @@ class ReplyItemGrpc extends StatelessWidget {
   Widget replyItemRow(
     BuildContext context,
     ThemeData theme,
+    bool conciseMode,
     List<ReplyInfo> replies,
   ) {
     final extraRow = replies.length < replyItem.count.toInt();
     late final length = replies.length + (extraRow ? 1 : 0);
     return Padding(
-      padding: const EdgeInsets.only(left: 42, right: 4),
+      padding: EdgeInsets.only(left: conciseMode ? 4 : 42, right: 4),
       child: Material(
         color: theme.colorScheme.onInverseSurface,
         borderRadius: const BorderRadius.all(Radius.circular(6)),

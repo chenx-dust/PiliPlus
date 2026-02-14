@@ -1020,7 +1020,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
     double width =
         clampDouble(maxHeight / maxWidth * 1.08, 0.5, 0.7) * maxWidth;
     if (maxWidth >= 560) {
-      width = maxWidth - clampDouble(maxWidth - width, 280, 425);
+      width = maxWidth - clampDouble(maxWidth - width, 300, 425);
     }
     final videoWidth = isFullScreen ? maxWidth : width;
     final double height = width / StyleString.aspectRatio16x9;
@@ -1029,8 +1029,6 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
       return childSplit(StyleString.aspectRatio16x9);
     }
     final introHeight = maxHeight - height - padding.top;
-    final showIntro =
-        videoDetailController.isUgc && videoDetailController.showRelatedVideo;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1045,20 +1043,18 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
                 height: videoHeight,
               ),
             ),
-            if (!videoDetailController.isFileSource)
-              Offstage(
-                offstage: isFullScreen,
-                child: SizedBox(
+            Offstage(
+              offstage: isFullScreen,
+              child: SizedBox(
+                width: width,
+                height: introHeight,
+                child: videoIntro(
                   width: width,
                   height: introHeight,
-                  child: videoIntro(
-                    width: width,
-                    height: introHeight,
-                    needRelated: false,
-                    needCtr: false,
-                  ),
+                  needCtr: false,
                 ),
               ),
+            ),
           ],
         ),
         Offstage(
@@ -1074,31 +1070,13 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   buildTabBar(
-                    introText: '相关视频',
-                    showIntro: videoDetailController.isFileSource
-                        ? true
-                        : showIntro,
+                    needIndicator: false,
+                    showIntro: false,
                   ),
                   Expanded(
                     child: videoTabBarView(
                       controller: videoDetailController.tabCtr,
                       children: [
-                        if (videoDetailController.isFileSource)
-                          localIntroPanel()
-                        else if (showIntro)
-                          KeepAliveWrapper(
-                            builder: (context) => CustomScrollView(
-                              key: const PageStorageKey(CommonIntroController),
-                              controller:
-                                  videoDetailController.effectiveIntroScrollCtr,
-                              slivers: [
-                                RelatedVideoPanel(
-                                  key: videoRelatedKey,
-                                  heroTag: heroTag,
-                                ),
-                              ],
-                            ),
-                          ),
                         if (videoDetailController.showReply) videoReplyPanel(),
                         if (_shouldShowSeasonPanel) seasonPanel,
                       ],
