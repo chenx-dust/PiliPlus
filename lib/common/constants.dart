@@ -15,6 +15,14 @@ abstract final class StyleString {
     minWidth: 420,
     maxWidth: 420,
   );
+  static const topBarHeight = 52.0;
+  static const buttonStyle = ButtonStyle(
+    visualDensity: VisualDensity(
+      horizontal: -2,
+      vertical: -1.25,
+    ),
+    tapTargetSize: .shrinkWrap,
+  );
 }
 
 abstract final class Constants {
@@ -57,6 +65,9 @@ abstract final class Constants {
   );
 
   static const goodsUrlPrefix = "https://gaoneng.bilibili.com/tetris";
+
+  // 'itemOpusStyle,opusBigCover,onlyfansVote,endFooterHidden,decorationCard,onlyfansAssetsV2,ugcDelete,onlyfansQaCard,editable,opusPrivateVisible,avatarAutoTheme,sunflowerStyle,cardsEnhance,eva3CardOpus,eva3CardVideo,eva3CardComment,eva3CardVote,eva3CardUser'
+  static const dynFeatures = 'itemOpusStyle,listOnlyfans,onlyfansQaCard';
 
   // 超分辨率滤镜
   static const List<String> mpvAnime4KShaders = [

@@ -9,6 +9,7 @@ import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/common/widgets/image_viewer/hero_dialog_route.dart';
 import 'package:PiliPlus/common/widgets/keep_alive_wrapper.dart';
 import 'package:PiliPlus/common/widgets/scroll_physics.dart';
+import 'package:PiliPlus/common/widgets/sliver/sliver_pinned_dynamic_header.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/main.dart';
 import 'package:PiliPlus/models/common/episode_panel_type.dart';
@@ -44,7 +45,7 @@ import 'package:PiliPlus/plugin/pl_player/models/fullscreen_mode.dart';
 import 'package:PiliPlus/plugin/pl_player/models/play_repeat.dart';
 import 'package:PiliPlus/plugin/pl_player/models/play_status.dart';
 import 'package:PiliPlus/plugin/pl_player/utils/fullscreen.dart';
-import 'package:PiliPlus/plugin/pl_player/view.dart';
+import 'package:PiliPlus/plugin/pl_player/view/view.dart';
 import 'package:PiliPlus/services/service_locator.dart';
 import 'package:PiliPlus/services/shutdown_timer_service.dart'
     show shutdownTimerService;
@@ -311,15 +312,15 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
     }
     plPlayerController = videoDetailController.plPlayerController;
     videoDetailController.autoPlay = true;
+    plPlayerController!
+      ..addStatusLister(playerListener)
+      ..addPositionListener(positionListener);
     if (videoDetailController.plPlayerController.preInitPlayer) {
       await plPlayerController!.play();
     } else {
       await videoDetailController.playerInit(autoplay: true);
     }
     if (!mounted || !isShowing) return;
-    plPlayerController!
-      ..addStatusLister(playerListener)
-      ..addPositionListener(positionListener);
     await plPlayerController!.autoEnterFullscreen();
   }
 
@@ -446,21 +447,18 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
       }
     }
 
-    () async {
-      if (videoDetailController.autoPlay) {
-        await videoDetailController.playerInit(
-          autoplay: videoDetailController.playerStatus?.isPlaying ?? false,
-        );
-      } else if (videoDetailController.plPlayerController.preInitPlayer &&
-          !videoDetailController.isQuerying &&
-          videoDetailController.videoState.value is! Error) {
-        await videoDetailController.playerInit();
-      }
-      if (!mounted || !isShowing) return;
-      plPlayerController
-        ?..addStatusLister(playerListener)
-        ..addPositionListener(positionListener);
-    }();
+    plPlayerController
+      ?..addStatusLister(playerListener)
+      ..addPositionListener(positionListener);
+    if (videoDetailController.autoPlay) {
+      videoDetailController.playerInit(
+        autoplay: videoDetailController.playerStatus?.isPlaying ?? false,
+      );
+    } else if (videoDetailController.plPlayerController.preInitPlayer &&
+        !videoDetailController.isQuerying &&
+        videoDetailController.videoState.value is! Error) {
+      videoDetailController.playerInit();
+    }
 
     super.didPopNext();
   }
@@ -651,14 +649,10 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
                   ? animHeight
                   : videoDetailController.videoHeight;
               return [
-                SliverAppBar(
-                  elevation: 0,
-                  scrolledUnderElevation: 0,
-                  primary: false,
-                  automaticallyImplyLeading: false,
-                  pinned: true,
-                  expandedHeight: height,
-                  flexibleSpace: Stack(
+                SliverPinnedDynamicHeader(
+                  minExtent: kToolbarHeight,
+                  maxExtent: height,
+                  child: Stack(
                     clipBehavior: Clip.none,
                     children: [
                       SizedBox(
@@ -863,7 +857,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
                 children: [
                   buildTabBar(onTap: videoDetailController.animToTop),
                   Expanded(
-                    child: videoTabBarView(
+                    child: tabBarView(
                       controller: videoDetailController.tabCtr,
                       children: [
                         videoIntro(
@@ -932,7 +926,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
                 children: [
                   buildTabBar(),
                   Expanded(
-                    child: videoTabBarView(
+                    child: tabBarView(
                       controller: videoDetailController.tabCtr,
                       children: [
                         videoIntro(
@@ -1000,7 +994,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
                   children: [
                     buildTabBar(showIntro: false),
                     Expanded(
-                      child: videoTabBarView(
+                      child: tabBarView(
                         controller: videoDetailController.tabCtr,
                         children: [
                           if (videoDetailController.showReply)
@@ -1074,7 +1068,7 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
                     showIntro: false,
                   ),
                   Expanded(
-                    child: videoTabBarView(
+                    child: tabBarView(
                       controller: videoDetailController.tabCtr,
                       children: [
                         if (videoDetailController.showReply) videoReplyPanel(),

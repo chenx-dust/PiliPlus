@@ -11,6 +11,7 @@ import 'package:PiliPlus/common/widgets/gesture/immediate_tap_gesture_recognizer
 import 'package:PiliPlus/common/widgets/gesture/mouse_interactive_viewer.dart';
 import 'package:PiliPlus/common/widgets/loading_widget.dart';
 import 'package:PiliPlus/common/widgets/pair.dart';
+import 'package:PiliPlus/common/widgets/player_bar.dart';
 import 'package:PiliPlus/common/widgets/progress_bar/audio_video_progress_bar.dart';
 import 'package:PiliPlus/common/widgets/progress_bar/segment_progress_bar.dart';
 import 'package:PiliPlus/common/widgets/view_safe_area.dart';
@@ -66,7 +67,8 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart' show RenderProxyBox;
+import 'package:flutter/rendering.dart'
+    show RenderProxyBox, SemanticsConfiguration;
 import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
@@ -77,6 +79,8 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
 import 'package:window_manager/window_manager.dart';
+
+part 'widgets.dart';
 
 class PLVideoPlayer extends StatefulWidget {
   const PLVideoPlayer({
@@ -150,40 +154,66 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
   // Timer? _accessibilityDebounce;
   // double _lastAnnouncedValue = -1;
 
-  StreamSubscription? _listener;
-  StreamSubscription? _controlsListener;
-
   bool _pauseDueToPauseUponEnteringBackgroundMode = false;
+
+  StreamSubscription? _brightnessListener;
+
+  int? tmpSubtitlePaddingB;
+  StreamSubscription? _controlsListener;
+  void _controlListener(bool val) {
+    final visible = val && !plPlayerController.controlsLock.value;
+
+    if ((widget.headerControl.key as GlobalKey<TimeBatteryMixin>).currentState
+        case final state?) {
+      if (state.mounted) {
+        state.getBatteryLevelIfNeeded();
+        state.provider
+          ?..startIfNeeded()
+          ..muted = !visible;
+        if (visible) {
+          state.startClock();
+        } else {
+          state.stopClock();
+        }
+      }
+    }
+
+    if (visible) {
+      animationController.forward();
+    } else {
+      animationController.reverse();
+    }
+
+    if (widget.videoDetailController case final controller?) {
+      if (controller.vttSubtitlesIndex.value != 0) {
+        if (visible) {
+          const int minPadding = 70;
+          if (plPlayerController.subtitlePaddingB < minPadding) {
+            tmpSubtitlePaddingB = plPlayerController.subtitlePaddingB;
+            plPlayerController
+              ..subtitlePaddingB = minPadding
+              ..subtitleConfig.value = plPlayerController.getSubConfig;
+          }
+        } else {
+          if (tmpSubtitlePaddingB != null) {
+            plPlayerController
+              ..subtitlePaddingB = tmpSubtitlePaddingB!
+              ..subtitleConfig.value = plPlayerController.getSubConfig;
+            tmpSubtitlePaddingB = null;
+          }
+        }
+      }
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    _controlsListener = plPlayerController.showControls.listen((bool val) {
-      final visible = val && !plPlayerController.controlsLock.value;
-
-      if ((widget.headerControl.key as GlobalKey<TimeBatteryMixin>).currentState
-          case final state?) {
-        if (state.mounted) {
-          state.getBatteryLevelIfNeeded();
-          state.provider
-            ?..startIfNeeded()
-            ..muted = !visible;
-          if (visible) {
-            state.startClock();
-          } else {
-            state.stopClock();
-          }
-        }
-      }
-
-      if (visible) {
-        animationController.forward();
-      } else {
-        animationController.reverse();
-      }
-    });
+    _controlsListener = plPlayerController.showControls.listen(
+      _controlListener,
+    );
     transformationController = TransformationController();
     animationController = AnimationController(
       vsync: this,
@@ -198,8 +228,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
           plPlayerController.volume.value =
               (await FlutterVolumeController.getVolume())!;
           FlutterVolumeController.addListener((double value) {
-            if (mounted &&
-                !plPlayerController.volumeInterceptEventStream.value) {
+            if (mounted && !plPlayerController.volumeInterceptEventStream) {
               plPlayerController.volume.value = value;
               if (Platform.isIOS && !FlutterVolumeController.showSystemUI) {
                 plPlayerController
@@ -212,7 +241,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
                   });
               }
             }
-          });
+          }, emitOnStart: false);
         } catch (_) {}
       });
 
@@ -227,7 +256,8 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
             }
           }
 
-          _listener = Platform.isIOS || plPlayerController.setSystemBrightness
+          _brightnessListener =
+              Platform.isIOS || plPlayerController.setSystemBrightness
               ? ScreenBrightnessPlatform
                     .instance
                     .onSystemScreenBrightnessChanged
@@ -264,7 +294,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (!plPlayerController.continuePlayInBackground.value) {
-      late final player = plPlayerController.videoController?.player;
+      late final player = plPlayerController.videoPlayerController;
       if (const [
         AppLifecycleState.paused,
         AppLifecycleState.detached,
@@ -311,7 +341,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
     _tapGestureRecognizer.dispose();
     _longPressRecognizer?.dispose();
     _doubleTapGestureRecognizer.dispose();
-    _listener?.cancel();
+    _brightnessListener?.cancel();
     _controlsListener?.cancel();
     animationController.dispose();
     if (PlatformUtils.isMobile) {
@@ -379,38 +409,15 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
       ),
 
       /// 时间进度
-      BottomControlType.time => Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          // 播放时间
-          Obx(
-            () => Text(
-              DurationUtils.formatDuration(
-                plPlayerController.positionSeconds.value,
-              ),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                height: 1.4,
-                fontFeatures: [FontFeature.tabularFigures()],
-              ),
-            ),
+      BottomControlType.time => Obx(
+        () => _VideoTime(
+          position: DurationUtils.formatDuration(
+            plPlayerController.positionSeconds.value,
           ),
-          Obx(
-            () => Text(
-              DurationUtils.formatDuration(
-                plPlayerController.duration.value.inSeconds,
-              ),
-              style: const TextStyle(
-                color: Color(0xFFD0D0D0),
-                fontSize: 10,
-                height: 1.4,
-                fontFeatures: [FontFeature.tabularFigures()],
-              ),
-            ),
+          duration: DurationUtils.formatDuration(
+            plPlayerController.duration.value.inSeconds,
           ),
-        ],
+        ),
       ),
 
       /// 高能进度条
@@ -488,6 +495,7 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
               tooltip: '分段信息',
               icon: DisabledIcon(
                 iconSize: 22,
+                color: Colors.white,
                 disable: !show,
                 child: Transform.rotate(
                   angle: math.pi / 2,
@@ -896,22 +904,15 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
       if (isNotFileSource && flag) BottomControlType.qa,
       if (!plPlayerController.isDesktopPip) BottomControlType.fullscreen,
     ];
-
-    return Row(
+    return PlayerBar(
       children: [
-        ...userSpecifyItemLeft.map(progressWidget),
-        Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) => FittedBox(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minWidth: constraints.maxWidth),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: userSpecifyItemRight.map(progressWidget).toList(),
-                ),
-              ),
-            ),
-          ),
+        Row(
+          mainAxisSize: .min,
+          children: userSpecifyItemLeft.map(progressWidget).toList(),
+        ),
+        Row(
+          mainAxisSize: .min,
+          children: userSpecifyItemRight.map(progressWidget).toList(),
         ),
       ],
     );
@@ -1326,6 +1327,10 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
         plPlayerController.updatePreviewIndex(newPos ~/ 1000);
       }
     } else if (_gestureType == GestureType.right) {
+      if (!plPlayerController.enableSlideVolumeBrightness) {
+        return;
+      }
+
       final double level = maxHeight * 0.5;
       EasyThrottle.throttle(
         'setVolume',
@@ -1617,39 +1622,41 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
           top: -1,
           bottom: -1,
           child: ClipRect(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                AppBarAni(
-                  isTop: true,
-                  controller: animationController,
-                  isFullScreen: isFullScreen,
-                  child: plPlayerController.isDesktopPip
-                      ? GestureDetector(
-                          behavior: HitTestBehavior.translucent,
-                          onPanStart: (_) => windowManager.startDragging(),
-                          child: widget.headerControl,
-                        )
-                      : widget.headerControl,
-                ),
-                AppBarAni(
-                  isTop: false,
-                  controller: animationController,
-                  isFullScreen: isFullScreen,
-                  child:
-                      widget.bottomControl ??
-                      BottomControl(
-                        maxWidth: maxWidth,
-                        isFullScreen: isFullScreen,
-                        controller: plPlayerController,
-                        videoDetailController: videoDetailController,
-                        buildBottomControl: () => buildBottomControl(
-                          videoDetailController,
-                          maxWidth > maxHeight,
+            child: RepaintBoundary(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  AppBarAni(
+                    isTop: true,
+                    controller: animationController,
+                    isFullScreen: isFullScreen,
+                    child: plPlayerController.isDesktopPip
+                        ? GestureDetector(
+                            behavior: HitTestBehavior.translucent,
+                            onPanStart: (_) => windowManager.startDragging(),
+                            child: widget.headerControl,
+                          )
+                        : widget.headerControl,
+                  ),
+                  AppBarAni(
+                    isTop: false,
+                    controller: animationController,
+                    isFullScreen: isFullScreen,
+                    child:
+                        widget.bottomControl ??
+                        BottomControl(
+                          maxWidth: maxWidth,
+                          isFullScreen: isFullScreen,
+                          controller: plPlayerController,
+                          videoDetailController: videoDetailController,
+                          buildBottomControl: () => buildBottomControl(
+                            videoDetailController,
+                            maxWidth > maxHeight,
+                          ),
                         ),
-                      ),
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -2433,382 +2440,4 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
       ),
     );
   }
-}
-
-Widget buildDmChart(
-  Color color,
-  List<double> dmTrend,
-  VideoDetailController videoDetailController, [
-  double offset = 0,
-]) {
-  return IgnorePointer(
-    child: Container(
-      height: 12,
-      margin: EdgeInsets.only(
-        bottom:
-            videoDetailController.viewPointList.isNotEmpty &&
-                videoDetailController.showVP.value
-            ? 19.25 + offset
-            : 4.25 + offset,
-      ),
-      child: LineChart(
-        LineChartData(
-          titlesData: const FlTitlesData(show: false),
-          lineTouchData: const LineTouchData(enabled: false),
-          gridData: const FlGridData(show: false),
-          borderData: FlBorderData(show: false),
-          minX: 0,
-          maxX: (dmTrend.length - 1).toDouble(),
-          minY: 0,
-          maxY: dmTrend.max,
-          lineBarsData: [
-            LineChartBarData(
-              spots: List.generate(
-                dmTrend.length,
-                (index) => FlSpot(
-                  index.toDouble(),
-                  dmTrend[index],
-                ),
-              ),
-              isCurved: true,
-              barWidth: 1,
-              color: color,
-              dotData: const FlDotData(show: false),
-              belowBarData: BarAreaData(
-                show: true,
-                color: color.withValues(alpha: 0.4),
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-}
-
-Widget buildSeekPreviewWidget(
-  PlPlayerController plPlayerController,
-  double maxWidth,
-  double maxHeight,
-  ValueGetter<bool> isMounted,
-) {
-  return Obx(
-    () {
-      if (!plPlayerController.showPreview.value) {
-        return const SizedBox.shrink();
-      }
-
-      try {
-        final data = plPlayerController.videoShot!.data;
-
-        final double scale =
-            plPlayerController.isFullScreen.value &&
-                (PlatformUtils.isDesktop || !plPlayerController.isVertical)
-            ? 4
-            : 3;
-        double height = 27 * scale;
-        final compatHeight = maxHeight - 140;
-        if (compatHeight > 50) {
-          height = math.min(height, compatHeight);
-        }
-
-        final int imgXLen = data.imgXLen;
-        final int imgYLen = data.imgYLen;
-        final int totalPerImage = data.totalPerImage;
-        double imgXSize = data.imgXSize;
-        double imgYSize = data.imgYSize;
-
-        return Align(
-          alignment: Alignment.center,
-          child: Obx(
-            () {
-              final index = plPlayerController.previewIndex.value!;
-              int pageIndex = (index ~/ totalPerImage).clamp(
-                0,
-                data.image.length - 1,
-              );
-              int align = index % totalPerImage;
-              int x = align % imgXLen;
-              int y = align ~/ imgYLen;
-              final url = data.image[pageIndex];
-
-              return ClipRRect(
-                borderRadius: StyleString.mdRadius,
-                child: VideoShotImage(
-                  url: url,
-                  x: x,
-                  y: y,
-                  imgXSize: imgXSize,
-                  imgYSize: imgYSize,
-                  height: height,
-                  imageCache: plPlayerController.previewCache,
-                  onSetSize: (xSize, ySize) => data
-                    ..imgXSize = imgXSize = xSize
-                    ..imgYSize = imgYSize = ySize,
-                  isMounted: isMounted,
-                ),
-              );
-            },
-          ),
-        );
-      } catch (e) {
-        if (kDebugMode) rethrow;
-        return const SizedBox.shrink();
-      }
-    },
-  );
-}
-
-class VideoShotImage extends StatefulWidget {
-  const VideoShotImage({
-    super.key,
-    required this.imageCache,
-    required this.url,
-    required this.x,
-    required this.y,
-    required this.imgXSize,
-    required this.imgYSize,
-    required this.height,
-    required this.onSetSize,
-    required this.isMounted,
-  });
-
-  final Map<String, ui.Image?> imageCache;
-  final String url;
-  final int x;
-  final int y;
-  final double imgXSize;
-  final double imgYSize;
-  final double height;
-  final Function(double imgXSize, double imgYSize) onSetSize;
-  final ValueGetter<bool> isMounted;
-
-  @override
-  State<VideoShotImage> createState() => _VideoShotImageState();
-}
-
-Future<ui.Image?> _getImg(String url) async {
-  final cacheManager = DefaultCacheManager();
-  final cacheKey = Utils.getFileName(url, fileExt: false);
-  try {
-    final fileInfo = await cacheManager.getSingleFile(
-      ImageUtils.safeThumbnailUrl(url),
-      key: cacheKey,
-      headers: Constants.baseHeaders,
-    );
-    return _loadImg(fileInfo.path);
-  } catch (_) {
-    return null;
-  }
-}
-
-Future<ui.Image?> _loadImg(String path) async {
-  final codec = await ui.instantiateImageCodecFromBuffer(
-    await ImmutableBuffer.fromFilePath(path),
-  );
-  final frame = await codec.getNextFrame();
-  codec.dispose();
-  return frame.image;
-}
-
-class _VideoShotImageState extends State<VideoShotImage> {
-  late Size _size;
-  late Rect _srcRect;
-  late Rect _dstRect;
-  late RRect _rrect;
-  ui.Image? _image;
-
-  @override
-  void initState() {
-    super.initState();
-    _initSize();
-    _loadImg();
-  }
-
-  void _initSizeIfNeeded() {
-    if (_size.width.isNaN) {
-      _initSize();
-    }
-  }
-
-  void _initSize() {
-    if (widget.imgXSize == 0) {
-      if (_image != null) {
-        final imgXSize = _image!.width / 10;
-        final imgYSize = _image!.height / 10;
-        final height = widget.height;
-        final width = height * imgXSize / imgYSize;
-        _setRect(width, height);
-        _setSrcRect(imgXSize, imgYSize);
-        widget.onSetSize(imgXSize, imgYSize);
-      } else {
-        _setRect(double.nan, double.nan);
-        _setSrcRect(widget.imgXSize, widget.imgYSize);
-      }
-    } else {
-      final height = widget.height;
-      final width = height * widget.imgXSize / widget.imgYSize;
-      _setRect(width, height);
-      _setSrcRect(widget.imgXSize, widget.imgYSize);
-    }
-  }
-
-  void _setRect(double width, double height) {
-    _size = Size(width, height);
-    _dstRect = Rect.fromLTRB(0, 0, width, height);
-    _rrect = RRect.fromRectAndRadius(_dstRect, const Radius.circular(10));
-  }
-
-  void _setSrcRect(double imgXSize, double imgYSize) {
-    _srcRect = Rect.fromLTWH(
-      widget.x * imgXSize,
-      widget.y * imgYSize,
-      imgXSize,
-      imgYSize,
-    );
-  }
-
-  void _loadImg() {
-    final url = widget.url;
-    _image = widget.imageCache[url];
-    if (_image != null) {
-      _initSizeIfNeeded();
-    } else if (!widget.imageCache.containsKey(url)) {
-      widget.imageCache[url] = null;
-      _getImg(url).then((image) {
-        if (image != null) {
-          if (widget.isMounted()) {
-            widget.imageCache[url] = image;
-          }
-          if (mounted) {
-            _image = image;
-            _initSizeIfNeeded();
-            setState(() {});
-          }
-        } else {
-          widget.imageCache.remove(url);
-        }
-      });
-    }
-  }
-
-  @override
-  void didUpdateWidget(VideoShotImage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.url != widget.url) {
-      _loadImg();
-    }
-    if (oldWidget.x != widget.x || oldWidget.y != widget.y) {
-      _setSrcRect(widget.imgXSize, widget.imgYSize);
-    }
-  }
-
-  late final _imgPaint = Paint()..filterQuality = FilterQuality.medium;
-  late final _borderPaint = Paint()
-    ..color = Colors.white
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 1.5;
-
-  @override
-  Widget build(BuildContext context) {
-    if (_image != null) {
-      return CroppedImage(
-        size: _size,
-        image: _image!,
-        srcRect: _srcRect,
-        dstRect: _dstRect,
-        rrect: _rrect,
-        imgPaint: _imgPaint,
-        borderPaint: _borderPaint,
-      );
-    }
-    return const SizedBox.shrink();
-  }
-}
-
-const double _triangleHeight = 5.6;
-
-class _DanmakuTip extends SingleChildRenderObjectWidget {
-  const _DanmakuTip({
-    this.offset = 0,
-    super.child,
-  });
-
-  final double offset;
-
-  @override
-  RenderObject createRenderObject(BuildContext context) {
-    return _RenderDanmakuTip(offset: offset);
-  }
-
-  @override
-  void updateRenderObject(
-    BuildContext context,
-    _RenderDanmakuTip renderObject,
-  ) {
-    renderObject.offset = offset;
-  }
-}
-
-class _RenderDanmakuTip extends RenderProxyBox {
-  _RenderDanmakuTip({
-    required double offset,
-  }) : _offset = offset;
-
-  double _offset;
-  double get offset => _offset;
-  set offset(double value) {
-    if (_offset == value) return;
-    _offset = value;
-    markNeedsPaint();
-  }
-
-  @override
-  void paint(PaintingContext context, Offset offset) {
-    final paint = Paint()
-      ..color = const Color(0xB3000000)
-      ..style = PaintingStyle.fill;
-
-    final strokePaint = Paint()
-      ..color = const Color(0x7EFFFFFF)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.25;
-
-    final radius = size.height / 2;
-    const triangleBase = _triangleHeight * 2 / 3;
-
-    final triangleCenterX = (size.width / 2 + _offset).clamp(
-      radius + triangleBase,
-      size.width - radius - triangleBase,
-    );
-    final path = Path()
-      // triangle (exceed)
-      ..moveTo(triangleCenterX - triangleBase, 0)
-      ..lineTo(triangleCenterX, -_triangleHeight)
-      ..lineTo(triangleCenterX + triangleBase, 0)
-      // top
-      ..lineTo(size.width - radius, 0)
-      // right
-      ..arcToPoint(
-        Offset(size.width - radius, size.height),
-        radius: Radius.circular(radius),
-      )
-      // bottom
-      ..lineTo(radius, size.height)
-      // left
-      ..arcToPoint(
-        Offset(radius, 0),
-        radius: Radius.circular(radius),
-      )
-      ..close();
-
-    context.canvas
-      ..drawPath(path, paint)
-      ..drawPath(path, strokePaint);
-
-    super.paint(context, offset);
-  }
-
-  @override
-  bool get isRepaintBoundary => true;
 }
