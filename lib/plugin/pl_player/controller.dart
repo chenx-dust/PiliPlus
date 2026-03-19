@@ -746,6 +746,7 @@ class PlPlayerController with BlockConfigMixin {
       configuration: VideoControllerConfiguration(
         enableHardwareAcceleration: hwdec != null,
         androidAttachSurfaceAfterVideoParameters: false,
+        vo: vo,
         hwdec: hwdec,
         usePlatformView: platformView,
         useHCPP: platformViewHCPP,
