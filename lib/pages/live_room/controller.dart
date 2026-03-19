@@ -38,7 +38,6 @@ import 'package:PiliPlus/utils/video_utils.dart';
 import 'package:canvas_danmaku/canvas_danmaku.dart';
 import 'package:easy_debounce/easy_throttle.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
 
@@ -184,7 +183,7 @@ class LiveRoomController extends GetxController {
     final account = Accounts.main;
     isLogin = account.isLogin;
     mid = account.mid;
-    queryLiveUrl();
+    queryLiveUrl(autoFullScreenFlag: true);
     queryLiveInfoH5();
     if (Accounts.heartbeat.isLogin && !Pref.historyPause) {
       VideoHttp.roomEntryAction(roomId: roomId);
@@ -194,7 +193,10 @@ class LiveRoomController extends GetxController {
     }
   }
 
-  Future<void>? playerInit({bool autoplay = true}) {
+  Future<void>? playerInit({
+    bool autoplay = true,
+    bool autoFullScreenFlag = false,
+  }) {
     if (videoUrl == null) {
       return null;
     }
@@ -203,11 +205,12 @@ class LiveRoomController extends GetxController {
       isLive: true,
       autoplay: autoplay,
       isVertical: isPortrait.value,
+      autoFullScreenFlag: autoFullScreenFlag,
       canHDR: false,
     );
   }
 
-  Future<void> queryLiveUrl() async {
+  Future<void> queryLiveUrl({bool autoFullScreenFlag = false}) async {
     currentQn ??= await Utils.isWiFi
         ? Pref.liveQuality
         : Pref.liveQualityCellular;
@@ -246,7 +249,7 @@ class LiveRoomController extends GetxController {
       currentQnDesc.value =
           LiveQuality.fromCode(currentQn)?.desc ?? currentQn.toString();
       videoUrl = VideoUtils.getLiveCdnUrl(item);
-      await playerInit();
+      await playerInit(autoFullScreenFlag: autoFullScreenFlag);
       isLoaded.value = true;
     } else {
       _showDialog(res.toString());
@@ -370,9 +373,9 @@ class LiveRoomController extends GetxController {
 
   void listener() {
     final userScrollDirection = scrollController.position.userScrollDirection;
-    if (userScrollDirection == ScrollDirection.forward) {
+    if (userScrollDirection == .forward) {
       disableAutoScroll.value = true;
-    } else if (userScrollDirection == ScrollDirection.reverse) {
+    } else if (userScrollDirection == .reverse) {
       final pos = scrollController.position;
       if (pos.maxScrollExtent - pos.pixels <= 100) {
         disableAutoScroll.value = false;
@@ -429,16 +432,18 @@ class LiveRoomController extends GetxController {
   }
 
   void addDm(dynamic msg, [DanmakuContentItem<DanmakuExtra>? item]) {
-    messages.add(msg);
-
     if (plPlayerController.showDanmaku) {
       if (item != null) {
         danmakuController?.addDanmaku(item);
       }
       if (autoScroll && !disableAutoScroll.value) {
+        messages.add(msg);
         scrollToBottom();
+        return;
       }
     }
+
+    messages.addOnly(msg);
   }
 
   @pragma('vm:notify-debugger-on-exception')

@@ -5,8 +5,8 @@ import 'package:PiliPlus/common/widgets/custom_icon.dart';
 import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/gesture/horizontal_drag_gesture_recognizer.dart'
     show touchSlopH;
-import 'package:PiliPlus/common/widgets/image/custom_grid_view.dart'
-    show CustomGridView, ImageModel;
+import 'package:PiliPlus/common/widgets/image_grid/image_grid_view.dart'
+    show ImageGridView, ImageModel;
 import 'package:PiliPlus/common/widgets/pendant_avatar.dart';
 import 'package:PiliPlus/grpc/reply.dart';
 import 'package:PiliPlus/http/fav.dart';
@@ -42,7 +42,7 @@ import 'package:PiliPlus/utils/update.dart';
 import 'package:PiliPlus/utils/utils.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide RefreshIndicator;
 import 'package:flutter/services.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -158,7 +158,7 @@ List<SettingsModel> get extraSettings => [
     leading: const Icon(Icons.photo_outlined),
     setKey: SettingBoxKey.horizontalPreview,
     defaultVal: false,
-    onChanged: (value) => CustomGridView.horizontalPreview = value,
+    onChanged: (value) => ImageGridView.horizontalPreview = value,
   ),
   NormalModel(
     title: '评论折叠行数',
@@ -355,6 +355,13 @@ List<SettingsModel> get extraSettings => [
     defaultVal: false,
   ),
   const SwitchModel(
+    title: '记录评论',
+    leading: Icon(Icons.message_outlined),
+    setKey: SettingBoxKey.saveReply,
+    defaultVal: true,
+    needReboot: true,
+  ),
+  const SwitchModel(
     title: '发评反诈',
     subtitle: '发送评论后检查评论是否可见',
     leading: Stack(
@@ -468,7 +475,7 @@ List<SettingsModel> get extraSettings => [
     leading: const Icon(Icons.menu),
     setKey: SettingBoxKey.enableImgMenu,
     defaultVal: false,
-    onChanged: (value) => CustomGridView.enableImgMenu = value,
+    onChanged: (value) => ImageGridView.enableImgMenu = value,
   ),
   SwitchModel(
     setKey: SettingBoxKey.feedBackEnable,
@@ -763,7 +770,7 @@ void _showDownPathDialog(BuildContext context, VoidCallback setState) {
           ListTile(
             onTap: () async {
               Get.back();
-              final path = await FilePicker.platform.getDirectoryPath();
+              final path = await FilePicker.getDirectoryPath();
               if (path == null || path == downloadPath) return;
               downloadPath = path;
               setState();
@@ -965,7 +972,7 @@ Future<void> _showRefreshDragDialog(
   if (res != null) {
     kDragContainerExtentPercentage = res;
     await GStorage.setting.put(SettingBoxKey.refreshDragPercentage, res);
-    Get.forceAppUpdate();
+    setState();
   }
 }
 
@@ -986,7 +993,19 @@ Future<void> _showRefreshDialog(
   if (res != null) {
     displacement = res;
     await GStorage.setting.put(SettingBoxKey.refreshDisplacement, res);
-    Get.forceAppUpdate();
+    if (WidgetsBinding.instance.rootElement case final context?) {
+      context.visitChildElements(_visitor);
+    }
+    setState();
+  }
+}
+
+void _visitor(Element context) {
+  if (!context.mounted) return;
+  if (context.widget is RefreshIndicator) {
+    context.markNeedsBuild();
+  } else {
+    context.visitChildren(_visitor);
   }
 }
 
@@ -1111,7 +1130,7 @@ Future<void> _showReplySortDialog(
     builder: (context) => SelectDialog<ReplySortType>(
       title: '评论展示',
       value: Pref.replySortType,
-      values: ReplySortType.values.map((e) => (e, e.title)).toList(),
+      values: ReplySortType.values.take(2).map((e) => (e, e.title)).toList(),
     ),
   );
   if (res != null) {

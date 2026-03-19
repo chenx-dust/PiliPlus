@@ -232,7 +232,8 @@ abstract final class SettingBoxKey {
       platformView = 'platformView',
       platformViewHCPP = 'platformViewHCPP',
       reduceLuxColor = 'reduceLuxColor',
-      liveCdnUrl = 'liveCdnUrl';
+      liveCdnUrl = 'liveCdnUrl',
+      saveReply = 'saveReply';
 }
 
 abstract final class LocalCacheKey {

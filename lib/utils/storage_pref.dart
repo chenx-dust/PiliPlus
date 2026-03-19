@@ -44,7 +44,7 @@ import 'package:flex_seed_scheme/flex_seed_scheme.dart' show FlexSchemeVariant;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:hive/hive.dart';
+import 'package:hive_ce/hive.dart';
 
 abstract final class Pref {
   static final Box _setting = GStorage.setting;
@@ -811,7 +811,7 @@ abstract final class Pref {
   static bool get enableOnlineTotal =>
       _setting.get(SettingBoxKey.enableOnlineTotal, defaultValue: false);
 
-  static bool get enableAutoEnter =>
+  static bool get autoEnterFullScreen =>
       _setting.get(SettingBoxKey.enableAutoEnter, defaultValue: false);
 
   static bool get enableAutoLongPressSpeed =>
@@ -975,4 +975,7 @@ abstract final class Pref {
 
   static double get touchSlopH =>
       _setting.get(SettingBoxKey.touchSlopH, defaultValue: 24.0);
+
+  static bool get saveReply =>
+      _setting.get(SettingBoxKey.saveReply, defaultValue: true);
 }
