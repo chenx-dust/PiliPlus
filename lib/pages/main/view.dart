@@ -1,6 +1,8 @@
 import 'dart:io';
 
+import 'package:PiliPlus/common/assets.dart';
 import 'package:PiliPlus/common/constants.dart';
+import 'package:PiliPlus/common/style.dart';
 import 'package:PiliPlus/common/widgets/flutter/pop_scope.dart';
 import 'package:PiliPlus/common/widgets/flutter/tabs.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
@@ -14,6 +16,7 @@ import 'package:PiliPlus/utils/app_scheme.dart';
 import 'package:PiliPlus/utils/extension/context_ext.dart';
 import 'package:PiliPlus/utils/extension/size_ext.dart';
 import 'package:PiliPlus/utils/extension/theme_ext.dart';
+import 'package:PiliPlus/utils/mobile_observer.dart';
 import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/storage_key.dart';
@@ -48,7 +51,7 @@ class _MainAppState extends PopScopeState<MainApp>
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
+    addObserverMobile(this);
     if (PlatformUtils.isDesktop) {
       windowManager
         ..addListener(this)
@@ -84,7 +87,7 @@ class _MainAppState extends PopScopeState<MainApp>
 
   @override
   void didPopNext() {
-    WidgetsBinding.instance.addObserver(this);
+    addObserverMobile(this);
     _mainController
       ..checkUnreadDynamic()
       ..checkDefaultSearch(true)
@@ -94,7 +97,7 @@ class _MainAppState extends PopScopeState<MainApp>
 
   @override
   void didPushNext() {
-    WidgetsBinding.instance.removeObserver(this);
+    removeObserverMobile(this);
     super.didPushNext();
   }
 
@@ -114,7 +117,7 @@ class _MainAppState extends PopScopeState<MainApp>
       trayManager.removeListener(this);
       windowManager.removeListener(this);
     }
-    WidgetsBinding.instance.removeObserver(this);
+    removeObserverMobile(this);
     PiliScheme.listener?.cancel();
     GStorage.close();
     super.dispose();
@@ -229,9 +232,9 @@ class _MainAppState extends PopScopeState<MainApp>
 
   Future<void> _handleTray() async {
     if (Platform.isWindows) {
-      await trayManager.setIcon('assets/images/logo/ico/app_icon.ico');
+      await trayManager.setIcon(Assets.logoIco);
     } else {
-      await trayManager.setIcon('assets/images/logo/desktop/logo_large.png');
+      await trayManager.setIcon(Assets.logoLarge);
     }
     if (!Platform.isLinux) {
       await trayManager.setToolTip(Constants.appName);
@@ -313,7 +316,7 @@ class _MainAppState extends PopScopeState<MainApp>
           () => FractionalTranslation(
             translation: Offset(
               0.0,
-              barOffset.value / StyleString.topBarHeight,
+              barOffset.value / Style.topBarHeight,
             ),
             child: bottomNav,
           ),
