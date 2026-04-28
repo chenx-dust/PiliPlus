@@ -1,5 +1,6 @@
 import 'package:PiliPlus/common/assets.dart';
 import 'package:PiliPlus/common/style.dart';
+import 'package:PiliPlus/common/widgets/extra_hittest_stack.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/models/common/avatar_badge_type.dart';
 import 'package:PiliPlus/models/common/image_type.dart';
@@ -57,7 +58,7 @@ class PendantAvatar extends StatelessWidget {
       final pendantSize = size * 1.75;
       pendant = Positioned(
         // -(size * 1.75 - size) / 2
-        top: -0.375 * size + pendentOffset,
+        top: -0.375 * size + pendentOffset / 2,
         child: IgnorePointer(
           child: NetworkImgLayer(
             type: .emote,
@@ -82,7 +83,7 @@ class PendantAvatar extends StatelessWidget {
         child: avatar,
       );
     }
-    Widget child = Stack(
+    Widget child = ExtraHitTestStack(
       clipBehavior: .none,
       alignment: .center,
       children: [

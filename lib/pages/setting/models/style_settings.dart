@@ -35,7 +35,6 @@ import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/storage_key.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
-import 'package:auto_orientation/auto_orientation.dart';
 import 'package:flutter/material.dart' hide StatefulBuilder;
 import 'package:flutter/services.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
@@ -69,9 +68,9 @@ List<SettingsModel> get styleSettings => [
     defaultVal: Pref.horizontalScreen,
     onChanged: (value) {
       if (value) {
-        autoScreen();
+        fullMode();
       } else {
-        AutoOrientation.portraitUpMode();
+        portraitUpMode();
       }
     },
   ),
@@ -83,14 +82,18 @@ List<SettingsModel> get styleSettings => [
     defaultVal: false,
     needReboot: true,
   ),
-  SwitchModel(
-    title: 'App字体字重',
-    subtitle: '点击设置',
-    setKey: SettingBoxKey.appFontWeight,
-    defaultVal: false,
-    leading: const Icon(Icons.text_fields),
-    onChanged: (_) => Get.updateMyAppTheme(),
-    onTap: _showFontWeightDialog,
+  SplitModel(
+    normalModel: const NormalModel.split(
+      title: 'App字体字重',
+      subtitle: '点击设置',
+      leading: Icon(Icons.text_fields),
+    ),
+    switchModel: SwitchModel.split(
+      defaultVal: false,
+      setKey: SettingBoxKey.appFontWeight,
+      onChanged: (_) => Get.updateMyAppTheme(),
+      onTap: _showFontWeightDialog,
+    ),
   ),
   NormalModel(
     title: '界面缩放',
@@ -106,7 +109,7 @@ List<SettingsModel> get styleSettings => [
   ),
   const SwitchModel(
     title: '优化平板导航栏',
-    leading: Icon(MdiIcons.soundbar),
+    leading: Icon(Icons.auto_fix_high),
     setKey: SettingBoxKey.optTabletNav,
     defaultVal: true,
     needReboot: true,
@@ -119,12 +122,25 @@ List<SettingsModel> get styleSettings => [
     defaultVal: true,
     needReboot: true,
   ),
+  const SwitchModel(
+    title: '悬浮底栏',
+    leading: Icon(MdiIcons.soundbar),
+    setKey: SettingBoxKey.floatingNavBar,
+    defaultVal: false,
+    needReboot: true,
+  ),
   NormalModel(
     leading: const Icon(Icons.calendar_view_week_outlined),
     title: '列表宽度（dp）限制',
     getSubtitle: () =>
         '当前: 主页${Pref.recommendCardWidth.toInt()}dp 其他${Pref.smallCardWidth.toInt()}dp，屏幕宽度:${MediaQuery.widthOf(Get.context!).toPrecision(2)}dp。宽度越小列数越多。',
     onTap: _showCardWidthDialog,
+  ),
+  const SwitchModel(
+    title: '播放页移除安全边距',
+    leading: Icon(Icons.fit_screen_outlined),
+    setKey: SettingBoxKey.removeSafeArea,
+    defaultVal: false,
   ),
   SwitchModel(
     title: '视频播放页使用深色主题',
@@ -137,12 +153,12 @@ List<SettingsModel> get styleSettings => [
       }
     },
   ),
-  const SwitchModel(
+  SwitchModel(
     title: '动态页启用瀑布流',
     subtitle: '关闭会显示为单列',
-    leading: Icon(Icons.view_array_outlined),
+    leading: const Icon(Icons.view_array_outlined),
     setKey: SettingBoxKey.dynamicsWaterfallFlow,
-    defaultVal: true,
+    defaultVal: Pref.horizontalScreen,
     needReboot: true,
   ),
   NormalModel(
